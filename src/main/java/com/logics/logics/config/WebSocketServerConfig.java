@@ -6,14 +6,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
-import reactor.core.publisher.Hooks;
 
 @Configuration
 @Slf4j
 public class WebSocketServerConfig {
-  @Bean
-  public HandlerMapping webSocketMapping(ChatWebSocketHandler webSocketHandler) {
-    return new SimpleUrlHandlerMapping(Map.of("/chat", webSocketHandler), -1);
-  }
 
+  @Bean
+  public HandlerMapping webSocketMapping(ChatWebSocketHandler chatWebSocketHandler,
+      RoomWebSocketHandler roomWebSocketHandler) {
+    return new SimpleUrlHandlerMapping(Map.of(
+        "/chat", chatWebSocketHandler,
+        "/rooms", roomWebSocketHandler
+    ), -1);
+  }
 }

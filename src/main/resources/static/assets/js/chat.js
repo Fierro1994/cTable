@@ -1,53 +1,48 @@
-
-let socket = null;
+let chatSocket = null;
 const messageInput = document.querySelector('#message-input');
 
-console.log("Username from server:", username);
-document.getElementById('username-display').textContent = username;
+function connectToChat() {
+  chatSocket = new WebSocket('ws://localhost:8080/chat');
 
-function connect() {
-  socket = new WebSocket('ws://localhost:8080/chat');
-
-  socket.onopen = () => {
-    console.log("WebSocket connected");
+  chatSocket.onopen = () => {
+    console.log("WebSocket for chat connected");
     const joinMessage = {
       type: 'JOIN',
       sender: username,
       content: username + ' присоединился к чату'
     };
-    socket.send(JSON.stringify(joinMessage));
+    chatSocket.send(JSON.stringify(joinMessage));
   };
 
-  socket.onmessage = (event) => {
-    console.log("Received message:", event.data);
+  chatSocket.onmessage = (event) => {
+    console.log("Received chat message:", event.data);
     try {
       const message = JSON.parse(event.data);
       renderMessage(message);
     } catch (error) {
-      console.error("Error parsing message:", error);
+      console.error("Error parsing chat message:", error);
     }
   };
 
-  socket.onclose = () => {
-    console.log("WebSocket disconnected");
-    setTimeout(connect, 5000);
+  chatSocket.onclose = () => {
+    console.log("WebSocket for chat disconnected");
+    setTimeout(connectToChat, 5000);
   };
 }
 
-connect();
+connectToChat();
 
 function sendMessage() {
   const messageContent = messageInput.value.trim();
 
-  if (messageContent && socket.readyState === WebSocket.OPEN) {
+  if (messageContent && chatSocket.readyState === WebSocket.OPEN) {
     const chatMessage = {
       type: 'CHAT',
       sender: username,
       content: messageContent
     };
 
-    console.log("Sending message:", chatMessage);
-    socket.send(JSON.stringify(chatMessage));
+    chatSocket.send(JSON.stringify(chatMessage));
     messageInput.value = '';
   }
 }
@@ -81,7 +76,7 @@ function renderMessage(message) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Добавляем обработчик Enter для отправки сообщения
+// Обработка Enter для отправки сообщения
 messageInput.addEventListener('keypress', function(event) {
   if (event.key === 'Enter') {
     sendMessage();

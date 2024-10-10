@@ -62,3 +62,53 @@ databaseChangeLog:
             constraintName: fk_messages_users
             referencedColumnNames: username
             referencedTableName: users
+
+  - changeSet:
+      id: 6
+      author: roman_bai
+      changes:
+        - createTable:
+            tableName: game_rooms
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(36)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: creator_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_players
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: player_ids
+                  type: TEXT  # Массив игрока (в PostgreSQL можно использовать тип ARRAY)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseColumnNames: creator_id
+            baseTableName: game_rooms
+            constraintName: fk_game_rooms_users
+            referencedColumnNames: username
+            referencedTableName: users

@@ -8,26 +8,21 @@
   <div id="gameRoomsList" class="game-rooms-list">
     <!-- Здесь будут отображаться игровые комнаты -->
   </div>
-</div>
-
-<!-- Модальное окно для создания комнаты -->
-<div id="createRoomModal" class="modal" style="display: none;">
-  <div class="modal-content">
-    <h3>Создать новую комнату</h3>
-    <input type="text" id="roomName" placeholder="Название комнаты">
-    <select id="maxPlayers">
-      <option value="2">2 игрока</option>
-      <option value="4">4 игрока</option>
-      <option value="6">6 игроков</option>
-      <option value="8">8 игроков</option>
-      <option value="12">12 игроков</option>
-    </select>
-    <input type="text" id="roomCategory" placeholder="Категория игры">
-    <button id="createRoomSubmitBtn">Создать комнату</button>
-    <button id="createRoomCancelBtn">Отмена</button>
+  <div id="createRoomModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3>Создать новую комнату</h3>
+      <input type="text" id="roomName" placeholder="Название комнаты">
+      <select id="maxPlayers">
+        <option value="2">2 игрока</option>
+        <option value="4">4 игрока</option>
+        <option value="6">6 игроков</option>
+        <option value="8">8 игроков</option>
+        <option value="12">12 игроков</option>
+      </select>
+      <input type="text" id="roomCategory" placeholder="Категория игры">
+      <button id="createRoomSubmitBtn">Создать комнату</button>
+      <button id="createRoomCancelBtn">Отмена</button>
+    </div>
   </div>
 </div>
-
-<script th:inline="javascript">
-</script>
 </html>
