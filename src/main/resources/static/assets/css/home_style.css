@@ -1,0 +1,51 @@
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.content-wrapper {
+  display: flex;
+  flex-grow: 1;
+}
+
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-and-players-wrapper {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  width: calc(100% - 40px);
+  height: 50vh;
+  min-height: 300px;
+  display: flex;
+}
+
+.chat-wrapper {
+  flex-grow: 1;
+  height: 100%;
+  width:70%;
+}
+.chat-wrapper > div {
+  height: 100%;
+}
+.player-list-wrapper {
+  width: 30%;
+  margin-left: 2%;
+  height: 46vh;
+}
+
+
+@media (max-width: 768px) {
+  .chat-and-players-wrapper {
+    left: 0;
+    bottom: 0;
+    width: 100%;
+  }
+}

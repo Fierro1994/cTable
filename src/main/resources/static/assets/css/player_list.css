@@ -1,0 +1,57 @@
+.player-list-container {
+  background-color: #f5f5f5;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.player-list-title {
+  font-size: 18px;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.player-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.player-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.player-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.player-name {
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.player-status {
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.player-status.online {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.player-status.in-game {
+  background-color: #3498db;
+  color: white;
+}

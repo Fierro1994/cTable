@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="gamePanel" class="game-panel">
+  <div class="left-section">
+    <a href="/profile" class="profile-link">
+      <i class="fas fa-user profile-icon"></i>
+      <span th:text="${username}">Username</span>
+    </a>
+    <div class="coin-balance">
+      <div class="coin-icon">₵</div>
+      <span class="coin-amount" th:text="${coins}">0</span>
+    </div>
+    <button class="create-room-button" onclick="createRoom()">Создать комнату</button>
+  </div>
+  <div class="right-section">
+    <form th:action="@{/auth/logout}" method="post">
+      <button type="submit" class="logout-button">Выйти</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function createRoom() {
+    // Здесь будет логика создания комнаты
+    alert("Функция создания комнаты будет реализована позже");
+  }
+</script>
+</body>
+</html>

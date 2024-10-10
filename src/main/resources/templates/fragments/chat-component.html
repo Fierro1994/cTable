@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="chat">
+  <div class="chat-container">
+    <div class="chat-header">
+      <h1>Чат</h1>
+      <div class="user-info">
+        <i class="fas fa-user"></i>
+        <span id="username-display" th:text="${username}">Имя пользователя</span>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chat-messages"></div>
+
+    <div class="chat-input">
+      <input type="text" id="message-input" placeholder="Введите сообщение...">
+      <button onclick="sendMessage()">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+  <script th:inline="javascript">
+    const username = /*[[${username}]]*/ 'defaultUser';
+  </script>
+</div>
+</html>
