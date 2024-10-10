@@ -12,8 +12,10 @@
   <link rel="stylesheet" th:href="@{/assets/css/player_list.css}">
 </head>
 <body>
+<input th:if="${_csrf}" type="hidden"
+       th:name="${_csrf.parameterName}"
+       th:value="${_csrf.token}" />
 <div th:replace="fragments/game-panel :: gamePanel"></div>
-
 <div class="content-wrapper">
   <div class="main-content">
     <div th:replace="fragments/game-rooms-list :: gameRoomsList"></div>

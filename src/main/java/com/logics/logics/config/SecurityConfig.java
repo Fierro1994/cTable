@@ -21,8 +21,7 @@ public class SecurityConfig {
   public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
     return http
         .cors(CorsSpec::disable)
-        .csrf(csrf -> csrf
-            .csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse()))
+        .csrf(ServerHttpSecurity.CsrfSpec::disable)
         .authorizeExchange(exchanges -> exchanges
             .pathMatchers("/auth/register", "/auth/login", "/assets/**").permitAll()
             .pathMatchers("/ws/**").permitAll()

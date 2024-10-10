@@ -69,22 +69,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Функция для создания новой комнаты
   async function createRoom() {
-    const name = document.getElementById('roomName').value;
-    const maxPlayers = document.getElementById('maxPlayers').value;
-    const category = document.getElementById('roomCategory').value;
+    try {
+      const name = document.getElementById('roomName').value;
+      const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
+      const category = document.getElementById('roomCategory').value;
 
-    const response = await fetch('/api/rooms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, maxPlayers, category })
-    });
+      const response = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, maxPlayers, category })
+      });
 
-    if (response.ok) {
-      closeCreateRoomModal();
-      refreshRooms();
-    } else {
-      alert('Ошибка при создании комнаты');
+      if (response.ok) {
+        closeCreateRoomModal();
+        refreshRooms();
+      } else {
+        const errorData = await response.json();
+        alert(`Ошибка при создании комнаты: ${errorData.message || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Ошибка при отправке запроса:', error);
+      alert('Произошла ошибка при создании комнаты');
     }
+  }
+
+  // Функция для получения значения куки по имени
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
   }
 
   // Функция для обновления списка комнат

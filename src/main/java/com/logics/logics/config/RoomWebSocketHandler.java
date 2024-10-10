@@ -76,7 +76,7 @@ public class RoomWebSocketHandler implements WebSocketHandler {
   }
 
   private void handleRoomJoined(Event event) {
-    String roomId = event.getContent();
+    Long roomId = Long.parseLong(event.getContent());
     gameRoomService.findById(roomId)
         .subscribe(room -> {
           try {
@@ -91,7 +91,7 @@ public class RoomWebSocketHandler implements WebSocketHandler {
   }
 
   private void handleGameStarted(Event event) {
-    String roomId = event.getContent();
+    Long roomId = Long.parseLong(event.getContent());
     gameRoomService.startGame(roomId)
         .subscribe(room -> broadcastToRoom(room, new Event(EventType.GAME_STARTED, "Игра началась!", "System")));
   }

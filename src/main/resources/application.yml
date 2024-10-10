@@ -14,3 +14,9 @@ spring:
   thymeleaf:
     mode: HTML
     cache: false
+logging:
+    level:
+      root: INFO
+      com.logics.logics: DEBUG
+      org.springframework.web: DEBUG
+      org.springframework.security: DEBUG

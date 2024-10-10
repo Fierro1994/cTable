@@ -2,6 +2,7 @@ package com.logics.logics.services;
 
 import com.logics.logics.entities.GameRoom;
 import com.logics.logics.repositories.GameRoomRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class GameRoomService {
 
   private final GameRoomRepository gameRoomRepository;
@@ -20,7 +22,6 @@ public class GameRoomService {
 
   public Mono<GameRoom> createRoom(String creatorId, String name, int maxPlayers, String category) {
     GameRoom newRoom = GameRoom.builder()
-        .id(UUID.randomUUID().toString())
         .name(name)
         .creatorId(creatorId)
         .maxPlayers(maxPlayers)
@@ -28,14 +29,17 @@ public class GameRoomService {
         .playerIds(new ArrayList<>())
         .status(GameRoom.GameRoomStatus.WAITING)
         .build();
-    return gameRoomRepository.save(newRoom);
+    log.info("Attempting to create new room: {}", newRoom);
+    return gameRoomRepository.save(newRoom)
+        .doOnSuccess(room -> log.info("Room created successfully: {}", room))
+        .doOnError(error -> log.error("Error creating room: {}", error.getMessage()));
   }
 
   public Flux<GameRoom> getAvailableRooms() {
     return gameRoomRepository.findByStatus(GameRoom.GameRoomStatus.WAITING);
   }
 
-  public Mono<GameRoom> joinRoom(String roomId, String playerId) {
+  public Mono<GameRoom> joinRoom(Long roomId, String playerId) {
     return gameRoomRepository.findByIdAndStatus(roomId, GameRoom.GameRoomStatus.WAITING)
         .flatMap(room -> {
           if (room.getPlayerIds().size() < room.getMaxPlayers()) {
@@ -50,7 +54,7 @@ public class GameRoomService {
         });
   }
 
-  public Mono<GameRoom> leaveRoom(String roomId, String playerId) {
+  public Mono<GameRoom> leaveRoom(Long roomId, String playerId) {
     return gameRoomRepository.findById(roomId)
         .flatMap(room -> {
           room.getPlayerIds().remove(playerId);
@@ -62,7 +66,7 @@ public class GameRoomService {
         });
   }
 
-  public Mono<GameRoom> startGame(String roomId) {
+  public Mono<GameRoom> startGame(Long roomId) {
     return gameRoomRepository.findById(roomId)
         .flatMap(room -> {
           room.setStatus(GameRoom.GameRoomStatus.IN_PROGRESS);
@@ -70,12 +74,12 @@ public class GameRoomService {
         });
   }
 
-  public Mono<GameRoom> disbandRoom(String roomId) {
+  public Mono<GameRoom> disbandRoom(Long roomId) {
     return gameRoomRepository.findById(roomId)
         .flatMap(room -> gameRoomRepository.delete(room).then(Mono.empty()));
   }
 
-  public Mono<GameRoom> findById(String roomId) {
+  public Mono<GameRoom> findById(Long roomId) {
     return gameRoomRepository.findById(roomId);
   }
 }

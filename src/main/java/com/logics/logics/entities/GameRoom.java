@@ -16,7 +16,7 @@ import java.util.List;
 @Table("game_rooms")
 public class GameRoom {
   @Id
-  private String id;
+  private Long id;
   private String name;
   private String creatorId;
   private int maxPlayers;
