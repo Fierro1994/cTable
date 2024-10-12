@@ -12,6 +12,7 @@
   <link rel="stylesheet" th:href="@{/assets/css/player_list.css}">
 </head>
 <body>
+<input type="hidden" id="username" th:value="${username}">
 <input th:if="${_csrf}" type="hidden"
        th:name="${_csrf.parameterName}"
        th:value="${_csrf.token}" />

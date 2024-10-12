@@ -1,30 +1,45 @@
-package com.logics.logics.entities;
+package com.logics.logics.entities
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.annotation.Id
+import org.springframework.data.relational.core.mapping.Table
 
-import java.util.List;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Table("game_rooms")
-public class GameRoom {
-  @Id
-  private Long id;
-  private String name;
-  private String creatorId;
-  private int maxPlayers;
-  private String category;
-  private List<String> playerIds;
-  private GameRoomStatus status;
+data class GameRoom(
+    @Id
+    var id: Long? = null,
+    var name: String? = null,
+    var creatorId: String? = null,
+    var maxPlayers: Int = 0,
+    var category: String? = null,
+    var playerIds: List<String>? = null,
+    var status: GameRoomStatus? = null
+) {
+    enum class GameRoomStatus {
+        WAITING, STARTING, IN_PROGRESS, FINISHED
+    }
 
-  public enum GameRoomStatus {
-    WAITING, STARTING, IN_PROGRESS, FINISHED
-  }
+    companion object {
+        @JvmStatic
+        fun builder() = Builder()
+    }
+
+    class Builder {
+        private var id: Long? = null
+        private var name: String? = null
+        private var creatorId: String? = null
+        private var maxPlayers: Int = 0
+        private var category: String? = null
+        private var playerIds: List<String>? = null
+        private var status: GameRoomStatus? = null
+
+        fun id(id: Long?) = apply { this.id = id }
+        fun name(name: String?) = apply { this.name = name }
+        fun creatorId(creatorId: String?) = apply { this.creatorId = creatorId }
+        fun maxPlayers(maxPlayers: Int) = apply { this.maxPlayers = maxPlayers }
+        fun category(category: String?) = apply { this.category = category }
+        fun playerIds(playerIds: List<String>?) = apply { this.playerIds = playerIds }
+        fun status(status: GameRoomStatus?) = apply { this.status = status }
+
+        fun build() = GameRoom(id, name, creatorId, maxPlayers, category, playerIds, status)
+    }
 }

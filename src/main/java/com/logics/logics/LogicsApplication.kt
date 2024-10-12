@@ -1,13 +1,11 @@
-package com.logics.logics;
+package com.logics.logics
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.runApplication
 
 @SpringBootApplication
-public class LogicsApplication {
+open class LogicsApplication
 
-	public static void main(String[] args) {
-		SpringApplication.run(LogicsApplication.class, args);
-	}
-
+fun main(args: Array<String>) {
+    runApplication<LogicsApplication>(*args)
 }

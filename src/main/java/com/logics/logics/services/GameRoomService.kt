@@ -1,85 +1,87 @@
-package com.logics.logics.services;
+package com.logics.logics.services
 
-import com.logics.logics.entities.GameRoom;
-import com.logics.logics.repositories.GameRoomRepository;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.UUID;
+import com.logics.logics.entities.GameRoom
+import com.logics.logics.repositories.GameRoomRepository
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 @Service
-@Slf4j
-public class GameRoomService {
+class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
 
-  private final GameRoomRepository gameRoomRepository;
+    private val log = LoggerFactory.getLogger(GameRoomService::class.java)
 
-  public GameRoomService(GameRoomRepository gameRoomRepository) {
-    this.gameRoomRepository = gameRoomRepository;
-  }
+    fun createRoom(creatorId: String, name: String, maxPlayers: Int, category: String): Mono<GameRoom> {
+        val newRoom = GameRoom(
+            name = name,
+            creatorId = creatorId,
+            maxPlayers = maxPlayers,
+            category = category,
+            playerIds = mutableListOf(creatorId),
+            status = GameRoom.GameRoomStatus.WAITING
+        )
+        log.info("Попытка создания новой комнаты: {}", newRoom)
+        return gameRoomRepository.save(newRoom)
+            .doOnSuccess { room -> log.info("Комната успешно создана: {}", room) }
+            .doOnError { error -> log.error("Ошибка при создании комнаты: {}", error.message) }
+    }
 
-  public Mono<GameRoom> createRoom(String creatorId, String name, int maxPlayers, String category) {
-    GameRoom newRoom = GameRoom.builder()
-        .name(name)
-        .creatorId(creatorId)
-        .maxPlayers(maxPlayers)
-        .category(category)
-        .playerIds(new ArrayList<>())
-        .status(GameRoom.GameRoomStatus.WAITING)
-        .build();
-    log.info("Attempting to create new room: {}", newRoom);
-    return gameRoomRepository.save(newRoom)
-        .doOnSuccess(room -> log.info("Room created successfully: {}", room))
-        .doOnError(error -> log.error("Error creating room: {}", error.getMessage()));
-  }
+    fun getAvailableRooms(): Flux<GameRoom> {
+        return gameRoomRepository.findByStatus(GameRoom.GameRoomStatus.WAITING)
+    }
 
-  public Flux<GameRoom> getAvailableRooms() {
-    return gameRoomRepository.findByStatus(GameRoom.GameRoomStatus.WAITING);
-  }
-
-  public Mono<GameRoom> joinRoom(Long roomId, String playerId) {
-    return gameRoomRepository.findByIdAndStatus(roomId, GameRoom.GameRoomStatus.WAITING)
-        .flatMap(room -> {
-          if (room.getPlayerIds().size() < room.getMaxPlayers()) {
-            room.getPlayerIds().add(playerId);
-            if (room.getPlayerIds().size() == room.getMaxPlayers()) {
-              room.setStatus(GameRoom.GameRoomStatus.STARTING);
+    fun joinRoom(roomId: Long, playerId: String): Mono<GameRoom> {
+        return gameRoomRepository.findByIdAndStatus(roomId, GameRoom.GameRoomStatus.WAITING)
+            .flatMap { room ->
+                val playerIds = room.playerIds?.toMutableList() ?: mutableListOf()
+                if (playerIds.size < room.maxPlayers && !playerIds.contains(playerId)) {
+                    playerIds.add(playerId)
+                    room.playerIds = playerIds
+                    if (playerIds.size == room.maxPlayers) {
+                        room.status = GameRoom.GameRoomStatus.STARTING
+                    }
+                    gameRoomRepository.save(room)
+                } else {
+                    Mono.error(RuntimeException("Невозможно присоединиться к комнате"))
+                }
             }
-            return gameRoomRepository.save(room);
-          } else {
-            return Mono.error(new RuntimeException("Room is full"));
-          }
-        });
-  }
+            .doOnError { log.error("Ошибка при присоединении к комнате", it) }
+    }
 
-  public Mono<GameRoom> leaveRoom(Long roomId, String playerId) {
-    return gameRoomRepository.findById(roomId)
-        .flatMap(room -> {
-          room.getPlayerIds().remove(playerId);
-          if (room.getPlayerIds().isEmpty()) {
-            return gameRoomRepository.delete(room).then(Mono.empty());
-          } else {
-            return gameRoomRepository.save(room);
-          }
-        });
-  }
+    fun leaveRoom(roomId: Long, playerId: String): Mono<GameRoom> {
+        return gameRoomRepository.findById(roomId)
+            .flatMap { room ->
+                val playerIds = room.playerIds?.toMutableList() ?: mutableListOf()
+                playerIds.remove(playerId)
+                room.playerIds = playerIds
+                if (playerIds.isEmpty()) {
+                    gameRoomRepository.delete(room).then(Mono.empty())
+                } else {
+                    gameRoomRepository.save(room)
+                }
+            }
+    }
 
-  public Mono<GameRoom> startGame(Long roomId) {
-    return gameRoomRepository.findById(roomId)
-        .flatMap(room -> {
-          room.setStatus(GameRoom.GameRoomStatus.IN_PROGRESS);
-          return gameRoomRepository.save(room);
-        });
-  }
+    fun startGame(roomId: Long): Mono<GameRoom> {
+        return gameRoomRepository.findById(roomId)
+            .flatMap { room ->
+                room.status = GameRoom.GameRoomStatus.IN_PROGRESS
+                gameRoomRepository.save(room)
+            }
+    }
 
-  public Mono<GameRoom> disbandRoom(Long roomId) {
-    return gameRoomRepository.findById(roomId)
-        .flatMap(room -> gameRoomRepository.delete(room).then(Mono.empty()));
-  }
+    fun disbandRoom(roomId: Long): Mono<Void> {
+        return gameRoomRepository.findById(roomId)
+            .flatMap { room ->
+                gameRoomRepository.delete(room)
+            }
+            .then()
+            .doOnSuccess { log.info("Комната $roomId успешно распущена") }
+            .doOnError { error -> log.error("Ошибка при роспуске комнаты $roomId: ${error.message}") }
+    }
 
-  public Mono<GameRoom> findById(Long roomId) {
-    return gameRoomRepository.findById(roomId);
-  }
+    fun findById(roomId: Long): Mono<GameRoom> {
+        return gameRoomRepository.findById(roomId)
+    }
 }

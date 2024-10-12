@@ -1,28 +1,25 @@
-package com.logics.logics.controllers;
+package com.logics.logics.controllers
 
-import com.logics.logics.entities.User;
-import com.logics.logics.services.UserService;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Mono;
+import com.logics.logics.entities.User
+import com.logics.logics.services.UserService
+import org.springframework.web.bind.annotation.ModelAttribute
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/auth")
-public class AuthController {
+class AuthController(private val userService: UserService) {
 
-  private final UserService userService;
-
-  public AuthController(UserService userService) {
-    this.userService = userService;
-  }
-
-  @PostMapping("/register")
-  public Mono<String> register(@ModelAttribute User user) {
-    return userService.register(user.getUsername(), user.getPassword())
-        .map(registeredUser -> "User registered successfully")
-        .onErrorResume(e -> Mono.just(e.getMessage()));
-  }
+    @PostMapping("/register")
+    fun register(@ModelAttribute user: User): Mono<String> {
+        return if (user.username != null && user.password != null) {
+            userService.register(user.username!!, user.password!!)
+                .map { "User registered successfully" }
+                .onErrorResume { Mono.just(it.message ?: "Unknown error occurred") }
+        } else {
+            Mono.just("Username or password cannot be null")
+        }
+    }
 }

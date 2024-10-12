@@ -1,73 +1,70 @@
-package com.logics.logics.config;
+package com.logics.logics.config
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.logics.logics.entities.Event;
-import com.logics.logics.entities.EventType;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.socket.WebSocketHandler;
-import org.springframework.web.reactive.socket.WebSocketMessage;
-import org.springframework.web.reactive.socket.WebSocketSession;
-import reactor.core.publisher.Mono;
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.logics.logics.entities.Event
+import com.logics.logics.entities.EventType
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
+import org.springframework.web.reactive.socket.WebSocketHandler
+import org.springframework.web.reactive.socket.WebSocketSession
+import reactor.core.publisher.Mono
+import java.util.concurrent.ConcurrentHashMap
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
 @Component
-public class ChatWebSocketHandler implements WebSocketHandler {
+open class ChatWebSocketHandler : WebSocketHandler {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
-  private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+    private val logger = LoggerFactory.getLogger(ChatWebSocketHandler::class.java)
+    private val objectMapper = ObjectMapper()
+    private val sessions = ConcurrentHashMap<String, WebSocketSession>()
 
-  @Override
-  public Mono<Void> handle(WebSocketSession session) {
-    return session.receive()
-        .map(WebSocketMessage::getPayloadAsText)
-        .map(this::toEvent)
-        .doOnNext(event -> {
-          log.info("Received chat event: {}", event);
-          if (event.getSender() == null || event.getSender().equals("null")) {
-            log.warn("Event has null sender: {}", event);
-            return;
-          }
-          if (event.getType() == EventType.JOIN) {
-            sessions.put(event.getSender(), session);
-          }
-          broadcastMessage(event);
-        })
-        .doOnComplete(() -> {
-          String sender = getSenderFromSession(session);
-          sessions.remove(sender);
-          Event leaveEvent = new Event(EventType.LEAVE, sender + " покинул чат", sender);
-          broadcastMessage(leaveEvent);
-          log.info("Chat session completed for user: {}", sender);
-        })
-        .then();
-  }
+    override fun handle(session: WebSocketSession): Mono<Void> {
+        return session.receive()
+            .map { it.payloadAsText }
+            .map { toEvent(it) }
+            .doOnNext { event ->
+                logger.info("Received chat event: {}", event)
+                val sender = event.sender
+                if (sender.isNullOrBlank()) {
+                    logger.warn("Event has null or blank sender: {}", event)
+                    return@doOnNext
+                }
+                if (event.type == EventType.JOIN) {
+                    sessions[sender] = session
+                }
+                broadcastMessage(event)
+            }
+            .doOnComplete {
+                val sender = getSenderFromSession(session)
+                sessions.remove(sender)
+                val leaveEvent = Event(EventType.LEAVE, "$sender покинул чат", sender)
+                broadcastMessage(leaveEvent)
+                logger.info("Chat session completed for user: {}", sender)
+            }
+            .then()
+    }
 
-  private void broadcastMessage(Event event) {
-    String message = toString(event);
-    sessions.values().forEach(session ->
-        session.send(Mono.just(session.textMessage(message))).subscribe());
-  }
+    private fun broadcastMessage(event: Event) {
+        val message = toString(event)
+        sessions.values.forEach { session ->
+            session.send(Mono.just(session.textMessage(message))).subscribe()
+        }
+    }
 
-  private String getSenderFromSession(WebSocketSession session) {
-    return sessions.entrySet().stream()
-        .filter(entry -> entry.getValue().equals(session))
-        .map(Map.Entry::getKey)
-        .findFirst()
-        .orElse("Unknown");
-  }
+    private fun getSenderFromSession(session: WebSocketSession): String {
+        return sessions.entries.firstOrNull { it.value == session }?.key ?: "Unknown"
+    }
 
-  @SneakyThrows
-  private Event toEvent(String message) {
-    return objectMapper.readValue(message, Event.class);
-  }
+    private fun toEvent(message: String): Event {
+        return try {
+            objectMapper.readValue(message, Event::class.java)
+        } catch (e: Exception) {
+            logger.error("Error parsing chat event: {}", message, e)
+            Event(EventType.ERROR, "Error processing chat message", "System")
+        }
+    }
 
-  @SneakyThrows
-  private String toString(Event event) {
-    return objectMapper.writeValueAsString(event);
-  }
+    private fun toString(event: Event): String {
+        return objectMapper.writeValueAsString(event)
+    }
 }

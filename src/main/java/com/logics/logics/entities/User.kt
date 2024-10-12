@@ -1,24 +1,32 @@
-package com.logics.logics.entities;
+package com.logics.logics.entities
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Generated;
-import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.annotation.Id
+import org.springframework.data.relational.core.mapping.Table
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Table("users")
-public class User {
+data class User(
+    @Id
+    var id: Long? = null,
+    var username: String? = null,
+    var password: String? = null,
+    var coins: Int = 0
+) {
+    companion object {
+        @JvmStatic
+        fun builder() = Builder()
+    }
 
-  @Id
-  @Generated
-  private Long id;
-  private String username;
-  private String password;
-  private int coins;
+    class Builder {
+        private var id: Long? = null
+        private var username: String? = null
+        private var password: String? = null
+        private var coins: Int = 0
+
+        fun id(id: Long?) = apply { this.id = id }
+        fun username(username: String?) = apply { this.username = username }
+        fun password(password: String?) = apply { this.password = password }
+        fun coins(coins: Int) = apply { this.coins = coins }
+
+        fun build() = User(id, username, password, coins)
+    }
 }

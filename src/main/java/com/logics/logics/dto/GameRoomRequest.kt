@@ -1,10 +1,7 @@
-package com.logics.logics.dto;
+package com.logics.logics.dto
 
-import lombok.Data;
-
-@Data
-public class GameRoomRequest {
-  private String name;
-  private int maxPlayers;
-  private String category;
-}
+data class GameRoomRequest(
+    var name: String? = null,
+    var maxPlayers: Int = 0,
+    var category: String? = null
+)

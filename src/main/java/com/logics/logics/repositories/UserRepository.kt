@@ -1,9 +1,9 @@
-package com.logics.logics.repositories;
+package com.logics.logics.repositories
 
-import com.logics.logics.entities.User;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
-import reactor.core.publisher.Mono;
+import com.logics.logics.entities.User
+import org.springframework.data.repository.reactive.ReactiveCrudRepository
+import reactor.core.publisher.Mono
 
-public interface UserRepository extends ReactiveCrudRepository<User, String> {
-  Mono<User> findByUsername(String username);
+interface UserRepository : ReactiveCrudRepository<User, String> {
+    fun findByUsername(username: String): Mono<User>
 }
