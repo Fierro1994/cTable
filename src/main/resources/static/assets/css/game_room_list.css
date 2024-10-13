@@ -1,76 +1,67 @@
 .game-rooms-container {
-  margin: 10px;
-  height: auto;
-  width: 95%;
-  padding: 20px;
-  background-color: #f5f5f5;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+  padding: 25px;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  height: 30vh;
 }
-
+h3{
+  text-align: center;
+}
 .game-rooms-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
+  height: 11px;
 }
 
 .game-rooms-title {
-  font-size: 24px;
-  color: #2c3e50;
+  font-size: 26px;
+  font-weight: 600;
+  color: #34495e;
+  margin-left: 10px;
 }
 
 .refresh-button, .create-room-button {
-  background-color: #3498db;
+  display: none; /* Hidden when in the room list or inside a room */
+}
+
+.game-rooms-table {
+  width: 100%;
+  border-collapse: collapse; /* Add this to remove space between cells */
+}
+
+.game-rooms-table th, .game-rooms-table td {
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.game-rooms-table th {
+  padding: 10px;
+  background-color: #ecf0f1;
+  font-weight: bold;
+  color: #2c3e50;
+  position: sticky; /* Make header sticky */
+  top: 0; /* Stick to the top */
+  z-index: 1; /* Ensure header is above other cells */
+}
+
+
+.join-button {
+  background-color: #3c654b;
   color: white;
   border: none;
   padding: 8px 16px;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s;
-  font-size: 14px;
-}
-
-.refresh-button:hover, .create-room-button:hover {
-  background-color: #2980b9;
-}
-
-.game-rooms-table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: white;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.game-rooms-table th, .game-rooms-table td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.game-rooms-table th {
-  background-color: #f0f0f0;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-.game-rooms-table tr:hover {
-  background-color: #f5f5f5;
-}
-
-.join-button {
-  background-color: #2ecc71;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .join-button:hover {
-  background-color: #27ae60;
+  background-color: #3c654b;
 }
 
 .modal {
@@ -87,50 +78,55 @@
 }
 
 .modal-content {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  position: absolute;
   background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  width: 300px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  border-radius: 15px;
+  width: 350px;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 }
 
 .modal-content h3 {
   margin-top: 0;
   color: #2c3e50;
+  font-size: 20px;
 }
 
 .modal-content select {
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   margin: 10px 0;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
 .modal-content button {
   width: 100%;
-  padding: 10px;
-  margin-top: 10px;
+  padding: 12px;
+  margin-top: 15px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 #createRoomSubmitBtn {
-  background-color: #2ecc71;
+  background-color: #1d2f24;
   color: white;
 }
 
 #createRoomCancelBtn {
-  background-color: #e74c3c;
+  background-color: #473331;
   color: white;
 }
 
 #createRoomSubmitBtn:hover {
-  background-color: #27ae60;
+  background-color: #3c654b;
 }
 
 #createRoomCancelBtn:hover {
-  background-color: #c0392b;
+  background-color: #78554f;
 }

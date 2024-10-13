@@ -23,7 +23,6 @@ open class ChatWebSocketHandler : WebSocketHandler {
             .map { it.payloadAsText }
             .map { toEvent(it) }
             .doOnNext { event ->
-                logger.info("Received chat event: {}", event)
                 val sender = event.sender
                 if (sender.isNullOrBlank()) {
                     logger.warn("Event has null or blank sender: {}", event)
@@ -39,7 +38,6 @@ open class ChatWebSocketHandler : WebSocketHandler {
                 sessions.remove(sender)
                 val leaveEvent = Event(EventType.LEAVE, "$sender покинул чат", sender)
                 broadcastMessage(leaveEvent)
-                logger.info("Chat session completed for user: {}", sender)
             }
             .then()
     }

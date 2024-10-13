@@ -51,7 +51,7 @@
 }
 .create-room-button {
   margin-left: 20px;
-  background-color: #27ae60;
+  background-color: #3c654b;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -62,7 +62,7 @@
   font-weight: bold;
 }
 .create-room-button:hover {
-  background-color: #2ecc71;
+  background-color: #58956d;
 }
 .logout-button {
   background-color: #e74c3c;

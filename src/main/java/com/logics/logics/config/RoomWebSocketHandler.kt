@@ -33,19 +33,12 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService) : WebSo
             .doOnNext { event -> handleEvent(event, username) }
             .doFinally {
                 sessions.remove(username)
-                userRooms.remove(username)?.let { roomId ->
-                    gameRoomService.leaveRoom(roomId, username)
-                        .subscribe { updatedRoom ->
-                            broadcastRoomUpdate(updatedRoom)
-                        }
-                }
             }
             .then()
     }
 
 
     private fun handleEvent(event: Event, username: String) {
-        logger.info("Получено событие: {}", event)
         when (event.type) {
             EventType.ROOM_CREATED -> handleRoomCreated(event, username)
             EventType.ROOM_JOINED -> handleRoomJoined(event, username)

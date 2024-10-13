@@ -22,9 +22,7 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
             playerIds = mutableListOf(creatorId),
             status = GameRoom.GameRoomStatus.WAITING
         )
-        log.info("Попытка создания новой комнаты: {}", newRoom)
         return gameRoomRepository.save(newRoom)
-            .doOnSuccess { room -> log.info("Комната успешно создана: {}", room) }
             .doOnError { error -> log.error("Ошибка при создании комнаты: {}", error.message) }
     }
 
@@ -37,7 +35,6 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
         return findById(roomId)
             .flatMap { room ->
                 if (cleanPlayerId == room.creatorId) {
-                    log.info("Игрок $cleanPlayerId уже является создателем комнаты $roomId, не добавляем повторно.")
                     return@flatMap Mono.just(room)
                 }
 
@@ -50,9 +47,6 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
                             status = if (playerIds.size == room.maxPlayers) GameRoom.GameRoomStatus.STARTING else room.status
                         )
                         return@flatMap gameRoomRepository.save(updatedRoom)
-                            .doOnSuccess { savedRoom ->
-                                log.info("Игрок $cleanPlayerId успешно добавлен в комнату $roomId. Текущие игроки: ${savedRoom.playerIds}")
-                            }
                     } else {
                         return@flatMap Mono.error(RuntimeException("Комната заполнена"))
                     }
@@ -120,7 +114,6 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
                 gameRoomRepository.delete(room)
             }
             .then()
-            .doOnSuccess { log.info("Комната $roomId успешно распущена") }
             .doOnError { error -> log.error("Ошибка при роспуске комнаты $roomId: ${error.message}") }
     }
 
@@ -133,7 +126,6 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
                     playerIds = room.playerIds?.map { cleanId(it) }?.distinct()
                 )
             }
-            .doOnNext { gameRoom -> log.info("Найдена игровая комната: $gameRoom") }
             .doOnError { error -> log.error("Ошибка при поиске игровой комнаты: ${error.message}") }
     }
 }

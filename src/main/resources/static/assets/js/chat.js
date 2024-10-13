@@ -5,7 +5,6 @@ function connectToChat() {
   chatSocket = new WebSocket('ws://localhost:8080/chat');
 
   chatSocket.onopen = () => {
-    console.log("WebSocket for chat connected");
     const joinMessage = {
       type: 'JOIN',
       sender: username,
@@ -15,7 +14,6 @@ function connectToChat() {
   };
 
   chatSocket.onmessage = (event) => {
-    console.log("Received chat message:", event.data);
     try {
       const message = JSON.parse(event.data);
       renderMessage(message);
@@ -25,7 +23,6 @@ function connectToChat() {
   };
 
   chatSocket.onclose = () => {
-    console.log("WebSocket for chat disconnected");
     setTimeout(connectToChat, 5000);
   };
 }
@@ -76,7 +73,6 @@ function renderMessage(message) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Обработка Enter для отправки сообщения
 messageInput.addEventListener('keypress', function(event) {
   if (event.key === 'Enter') {
     sendMessage();

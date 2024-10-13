@@ -4,30 +4,15 @@ document.addEventListener('DOMContentLoaded', function() {
   let roomsSocket = null;
   let username = document.getElementById('username').value;
 
-
   initializeGameRooms();
-
-  const savedRoomId = localStorage.getItem('currentRoomId');
-  if (savedRoomId) {
-    joinRoom(savedRoomId).catch(() => {
-      console.log('Не удалось восстановить комнату, обновляем список комнат.');
-      refreshRooms();
-    });
-  } else {
-    refreshRooms();
-  }
 
   function connectToRoomsSocket() {
     if (roomsSocket && (roomsSocket.readyState === WebSocket.OPEN || roomsSocket.readyState === WebSocket.CONNECTING)) {
-      console.log("WebSocket уже подключен или в процессе подключения, readyState:", roomsSocket.readyState);
       return;
     }
 
-    console.log("Создание нового WebSocket соединения");
     roomsSocket = new WebSocket(`ws://localhost:8080/rooms?username=${username}`);
-
     roomsSocket.onopen = () => {
-      console.log("WebSocket открыт, readyState:", roomsSocket.readyState);
       refreshRooms();
     };
 
@@ -37,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     roomsSocket.onclose = (event) => {
-      console.log("WebSocket закрыт, код:", event.code, "причина:", event.reason);
     };
 
     roomsSocket.onerror = (error) => {
@@ -48,7 +32,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
   function handleRoomMessage(message) {
-    console.log("Обрабатываем сообщение:", message);
     switch (message.type) {
       case 'ROOM_LEFT_CONFIRMATION':
         currentRoom = null;
@@ -71,11 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         handleRoomDisbanded();
         break;
       case 'ROOM_LIST_UPDATE':
-        console.log("Получено обновление списка комнат:", message);
         rooms = JSON.parse(message.content);
-        if (rooms.length === 0) {
-          console.log("Список комнат пуст");
-        }
         if (!currentRoom) {
           displayRooms();
         }
@@ -98,20 +77,14 @@ document.addEventListener('DOMContentLoaded', function() {
     displayRooms();
   }
 
-
-
-  // Функция для открытия и закрытия модального окна создания комнаты
   function openCreateRoomModal() {
-    console.log('Открываем модальное окно создания комнаты');
     document.getElementById('createRoomModal').style.display = 'block';
   }
 
   function closeCreateRoomModal() {
-    console.log('Закрываем модальное окно создания комнаты');
     document.getElementById('createRoomModal').style.display = 'none';
   }
 
-  // Функция для создания новой комнаты
   async function createRoom() {
     try {
       const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
@@ -149,15 +122,12 @@ document.addEventListener('DOMContentLoaded', function() {
       alert('Произошла ошибка при создании комнаты');
     }
   }
-  // Функция для получения значения куки по имени
   function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
   }
 
-
-  // Функция для отображения списка комнат
 
   function displayRooms() {
     const roomsContainer = document.querySelector('.game-rooms-display');
@@ -205,7 +175,8 @@ document.addEventListener('DOMContentLoaded', function() {
         gameRoomsList.appendChild(roomElement);
       });
     }
-
+    document.getElementById('refreshRoomsBtn').style.display = 'inline-block';
+    document.getElementById('createRoomBtn').style.display = 'inline-block';
     document.getElementById('refreshRoomsBtn').addEventListener('click', refreshRooms);
     document.getElementById('createRoomBtn').addEventListener('click', openCreateRoomModal);
     document.querySelectorAll('.join-button').forEach(button => {
@@ -214,9 +185,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     startRoomTimers();
   }
-
-
-
 
   function getTimeLeft(createdAt) {
     const now = new Date();
@@ -241,9 +209,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
   }
 
-  // Функция для присоединения к комнате
-
-
   async function joinRoom(roomId) {
     if (roomsSocket && roomsSocket.readyState === WebSocket.OPEN) {
       const joinEvent = {
@@ -252,13 +217,17 @@ document.addEventListener('DOMContentLoaded', function() {
         content: roomId.toString()
       };
       roomsSocket.send(JSON.stringify(joinEvent));
+
+      currentRoom = rooms.find(room => room.id == roomId);
+      displayRoomDetails(currentRoom);
     } else {
       console.error("WebSocket не подключен. Попытка повторного подключения...");
       connectToRoomsSocket();
     }
   }
 
-  // Функция для отображения деталей комнаты
+
+
   function displayRoomDetails(room) {
     const roomsList = document.getElementById('gameRoomsList');
     if (!room) {
@@ -267,18 +236,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     roomsList.innerHTML = `
-    <h3>Комната: ${room.name}</h3>
-    <div>Категория: ${room.category}</div>
-    <div>Игроки: ${room.playerIds.length}/${room.maxPlayers}</div>
-    <ul>
-      ${room.playerIds.map(playerId => `<li>${playerId}</li>`).join('')}
-    </ul>
-    ${room.creatorId === username ?
-        `<button id="startGameBtn">Начать игру</button>
-         <button id="disbandRoomBtn">Распустить комнату</button>` :
-        `<button id="leaveRoomBtn">Покинуть комнату</button>`
+    <h3 class="room-name">Комната: ${room.name}</h3>
+<div class="room-category">Категория: ${room.category}</div>
+<div class="room-players">Игроки: ${room.playerIds.length}/${room.maxPlayers}</div>
+<ul class="player-list">
+  ${room.playerIds.map(playerId => `<li class="player-item">${playerId}</li>`).join('')}
+</ul>
+${room.creatorId === username ?
+    `<button class="start-game-btn" id="startGameBtn">Начать игру</button>
+     <button class="disband-room-btn" id="disbandRoomBtn">Распустить комнату</button>` :
+    `<button class="leave-room-btn" id="leaveRoomBtn">Покинуть комнату</button>`
+}
+  `;
+
+    // Hide buttons when inside a room
+    const refreshBtn = document.getElementById('refreshRoomsBtn');
+    const createRoomBtn = document.getElementById('createRoomBtn');
+    const roomHeader = document.getElementsByClassName('game-rooms-header')[0];
+
+    if (refreshBtn && createRoomBtn && roomHeader) {
+      refreshBtn.style.display = 'none';
+      createRoomBtn.style.display = 'none';
+      roomHeader.style.display = 'none';
     }
-    `;
 
     if (room.creatorId === username) {
       document.getElementById('startGameBtn').addEventListener('click', () => startGame(room.id));
@@ -288,7 +268,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Функция для начала игры
   async function startGame(roomId) {
     try {
       const response = await fetch(`/api/rooms/${roomId}/start`, { method: 'POST' });
@@ -303,7 +282,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Функция для роспуска комнаты
   async function disbandRoom(roomId) {
     try {
         const disbandEvent = {
@@ -320,15 +298,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Функция для выхода из комнаты
   function leaveRoom(roomId) {
     const event = {
       type: 'ROOM_LEFT',
       content: roomId.toString()
     };
     roomsSocket.send(JSON.stringify(event));
-
-    // Добавляем обновление списка комнат после выхода
     refreshRooms();
   }
 
@@ -339,16 +314,17 @@ document.addEventListener('DOMContentLoaded', function() {
         sender: username,
         content: 'refresh'
       };
-      roomsSocket.send(JSON.stringify(refreshEvent));  // Запрос списка комнат
+      roomsSocket.send(JSON.stringify(refreshEvent));
+      const savedRoomId = localStorage.getItem('currentRoomId');
+      if (savedRoomId) {
+        joinRoom(savedRoomId)
+        }
     } else if (!roomsSocket || roomsSocket.readyState === WebSocket.CLOSED) {
       console.error("WebSocket не подключен. Попытка повторного подключения...");
-      connectToRoomsSocket();  // Попробуй переподключиться
+      connectToRoomsSocket();
     }
   }
-  // Инициализация кнопок и обновление списка комнат
   function initializeGameRooms() {
-    console.log('Инициализация игровых комнат');
-
     const refreshBtn = document.getElementById('refreshRoomsBtn');
     const createRoomBtn = document.getElementById('createRoomBtn');
     const createRoomSubmitBtn = document.getElementById('createRoomSubmitBtn');
