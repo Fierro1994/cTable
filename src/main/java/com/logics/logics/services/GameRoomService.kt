@@ -11,8 +11,13 @@ import reactor.core.publisher.Mono
 class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
 
     private val log = LoggerFactory.getLogger(GameRoomService::class.java)
+    private fun cleanId(id: String): String {
 
+        val cleaned = id.replace(Regex("[{}\"\\\\/]"), "").trim()
+        return if (cleaned == id) cleaned else cleanId(cleaned)
+    }
     fun createRoom(creatorId: String, name: String, maxPlayers: Int, category: String): Mono<GameRoom> {
+
         val newRoom = GameRoom(
             name = name,
             creatorId = creatorId,
@@ -32,23 +37,35 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
     }
 
     fun joinRoom(roomId: Long, playerId: String): Mono<GameRoom> {
-        return gameRoomRepository.findByIdAndStatus(roomId, GameRoom.GameRoomStatus.WAITING)
+        val cleanPlayerId = cleanId(playerId)
+        return findById(roomId)
             .flatMap { room ->
-                val playerIds = room.playerIds?.toMutableList() ?: mutableListOf()
-                if (playerIds.size < room.maxPlayers && !playerIds.contains(playerId)) {
-                    playerIds.add(playerId)
-                    room.playerIds = playerIds
-                    if (playerIds.size == room.maxPlayers) {
-                        room.status = GameRoom.GameRoomStatus.STARTING
-                    }
-                    gameRoomRepository.save(room)
-                } else {
-                    Mono.error(RuntimeException("Невозможно присоединиться к комнате"))
+                if (cleanPlayerId == room.creatorId) {
+                    log.info("Игрок $cleanPlayerId уже является создателем комнаты $roomId, не добавляем повторно.")
+                    return@flatMap Mono.just(room)
                 }
+
+                val playerIds = room.playerIds?.toMutableSet() ?: mutableSetOf()
+                if (!playerIds.contains(cleanPlayerId)) {
+                    if (playerIds.size < room.maxPlayers) {
+                        playerIds.add(cleanPlayerId)
+                        val updatedRoom = room.copy(
+                            playerIds = playerIds.toList(),
+                            status = if (playerIds.size == room.maxPlayers) GameRoom.GameRoomStatus.STARTING else room.status
+                        )
+                        return@flatMap gameRoomRepository.save(updatedRoom)
+                            .doOnSuccess { savedRoom ->
+                                log.info("Игрок $cleanPlayerId успешно добавлен в комнату $roomId. Текущие игроки: ${savedRoom.playerIds}")
+                            }
+                    } else {
+                        return@flatMap Mono.error(RuntimeException("Комната заполнена"))
+                    }
+                }
+
+                Mono.just(room)
             }
             .doOnError { log.error("Ошибка при присоединении к комнате", it) }
     }
-
     fun leaveRoom(roomId: Long, playerId: String): Mono<GameRoom> {
         return gameRoomRepository.findById(roomId)
             .flatMap { room ->
@@ -81,7 +98,16 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
             .doOnError { error -> log.error("Ошибка при роспуске комнаты $roomId: ${error.message}") }
     }
 
+
     fun findById(roomId: Long): Mono<GameRoom> {
         return gameRoomRepository.findById(roomId)
+            .map { room ->
+                room.copy(
+                    creatorId = cleanId(room.creatorId ?: ""),
+                    playerIds = room.playerIds?.map { cleanId(it) }?.distinct()
+                )
+            }
+            .doOnNext { gameRoom -> log.info("Найдена игровая комната: $gameRoom") }
+            .doOnError { error -> log.error("Ошибка при поиске игровой комнаты: ${error.message}") }
     }
 }

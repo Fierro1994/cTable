@@ -3,7 +3,22 @@ document.addEventListener('DOMContentLoaded', function() {
   let currentRoom = null;
   let roomsSocket = null;
   let username = document.getElementById('username').value;
+
   initializeGameRooms();
+
+  const savedRoomId = localStorage.getItem('currentRoomId');
+  if (savedRoomId) {
+    // Если в localStorage есть сохраненный roomId, пытаемся присоединиться к комнате
+    joinRoom(savedRoomId)
+      .catch(() => {
+      console.log('Не удалось восстановить комнату, обновляем список комнат.');
+      refreshRooms();
+    });
+  } else {
+    // Если нет сохраненной комнаты, просто обновляем список комнат
+    refreshRooms();
+  }
+
   // Функция для открытия WebSocket подключения
   function connectToRoomsSocket() {
     if (roomsSocket && (roomsSocket.readyState === WebSocket.OPEN || roomsSocket.readyState === WebSocket.CONNECTING)) {
@@ -103,6 +118,9 @@ document.addEventListener('DOMContentLoaded', function() {
         currentRoom = createdRoom;
         currentRoom.playerIds = [username]; // Добавляем создателя в список игроков
 
+        // Сохраняем ID созданной комнаты в localStorage
+        localStorage.setItem('currentRoomId', createdRoom.id);
+
         // Закрываем модальное окно создания комнаты
         closeCreateRoomModal();
 
@@ -186,10 +204,38 @@ document.addEventListener('DOMContentLoaded', function() {
   // Функция для присоединения к комнате
   async function joinRoom(roomId) {
     try {
-      const response = await fetch(`/api/rooms/${roomId}/join`, { method: 'POST' });
-      if (response.ok) {
-        currentRoom = await response.json();
+      const response = await fetch(`/api/rooms/${roomId}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.error('Комната не найдена. Возможно, она была удалена.');
+          localStorage.removeItem('currentRoomId');  // Удаляем из localStorage
+          refreshRooms();  // Обновляем список комнат
+          return;
+        } else {
+          alert('Ошибка при получении данных комнаты');
+          return;
+        }
+      }
+
+      const room = await response.json();
+
+      // Проверяем, есть ли уже текущий пользователь в списке игроков
+      if (room.playerIds && room.playerIds.includes(username)) {
+        console.log('Вы уже находитесь в этой комнате.');
+        currentRoom = room;  // Обновляем состояние текущей комнаты
+        displayRoomDetails(room);  // Отображаем информацию о комнате
+        return;  // Выход, если пользователь уже в комнате
+      }
+
+      // Если игрока нет в комнате, присоединяемся к ней
+      const joinResponse = await fetch(`/api/rooms/${roomId}/join`, { method: 'POST' });
+      if (joinResponse.ok) {
+        currentRoom = await joinResponse.json();
         displayRoomDetails(currentRoom);
+
+        // Сохраняем текущую комнату в localStorage
+        localStorage.setItem('currentRoomId', roomId);
+
         const joinEvent = {
           type: 'ROOM_JOINED',
           sender: username,
@@ -204,7 +250,6 @@ document.addEventListener('DOMContentLoaded', function() {
       alert('Ошибка при присоединении к комнате');
     }
   }
-
   // Функция для отображения деталей комнаты
   function displayRoomDetails(room) {
     const roomsList = document.getElementById('gameRoomsList');
@@ -256,11 +301,11 @@ document.addEventListener('DOMContentLoaded', function() {
       const response = await fetch(`/api/rooms/${roomId}/disband`, { method: 'POST' });
       if (response.ok) {
         console.log('Комната успешно распущена');
-
-        // Очищаем информацию о текущей комнате
         currentRoom = null;
 
-        // Отправляем событие через WebSocket
+        // Удаляем текущую комнату из localStorage
+        localStorage.removeItem('currentRoomId');
+
         const disbandEvent = {
           type: 'ROOM_DISBANDED',
           sender: username,
@@ -268,10 +313,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         roomsSocket.send(JSON.stringify(disbandEvent));
 
-        // Обновляем список комнат после роспуска
         refreshRooms();
-        displayRooms();  // Вызов функции для отображения списка комнат
-
+        displayRooms();
       } else {
         console.error('Ошибка при роспуске комнаты:', response.status, response.statusText);
         alert('Ошибка при роспуске комнаты: ' + response.statusText);
@@ -289,6 +332,10 @@ document.addEventListener('DOMContentLoaded', function() {
       if (response.ok) {
         currentRoom = null;
         refreshRooms();
+
+        // Удаляем текущую комнату из localStorage
+        localStorage.removeItem('currentRoomId');
+
         const leaveEvent = {
           type: 'ROOM_LEFT',
           sender: username,
@@ -303,6 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
       alert('Ошибка при выходе из комнаты');
     }
   }
+
   function refreshRooms() {
     if (roomsSocket && roomsSocket.readyState === WebSocket.OPEN) {
       const refreshEvent = {
