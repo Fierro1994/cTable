@@ -21,35 +21,63 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService) : WebSo
     private val objectMapper = ObjectMapper()
     private val sessions = ConcurrentHashMap<String, WebSocketSession>()
     private val scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors())
+    private val userRooms = ConcurrentHashMap<String, Long>()
 
     override fun handle(session: WebSocketSession): Mono<Void> {
-        sessions[session.id] = session  // Добавляем сессию при подключении
+        val username = session.handshakeInfo.uri.query.split("=").lastOrNull() ?: "unknown"
+        sessions[username] = session
 
         return session.receive()
             .map { it.payloadAsText }
             .map { toEvent(it) }
-            .doOnNext { event -> handleEvent(event, session) }  // Вызов обработчика события
-            .doFinally { sessions.remove(session.id) }  // Удаляем сессию при завершении
+            .doOnNext { event -> handleEvent(event, username) }
+            .doFinally {
+                sessions.remove(username)
+                userRooms.remove(username)?.let { roomId ->
+                    gameRoomService.leaveRoom(roomId, username)
+                        .subscribe { updatedRoom ->
+                            broadcastRoomUpdate(updatedRoom)
+                        }
+                }
+            }
             .then()
     }
-    private fun handleEvent(event: Event, session: WebSocketSession) {
+
+
+    private fun handleEvent(event: Event, username: String) {
         logger.info("Получено событие: {}", event)
         when (event.type) {
-            EventType.ROOM_CREATED -> handleRoomCreated()
-            EventType.ROOM_JOINED -> handleRoomJoined(event)
+            EventType.ROOM_CREATED -> handleRoomCreated(event, username)
+            EventType.ROOM_JOINED -> handleRoomJoined(event, username)
             EventType.ROOM_DISBANDED -> handleRoomDisbanded(event)
             EventType.ROOM_LIST_REQUEST -> handleRoomListRequest()
+            EventType.ROOM_LEFT -> handleRoomLeft(event, username)
             else -> logger.warn("Неизвестный тип события: ${event.type}")
         }
     }
-    private fun handleRoomCreated() {
+
+    private fun handleRoomCreated(event: Event, username: String) {
+        val roomId = event.content?.toLongOrNull() ?: return
+        userRooms[username] = roomId
         broadcastRoomUpdate()
     }
 
     private fun handleRoomDisbanded(event: Event) {
         val roomId = event.content?.toLongOrNull() ?: return
-        gameRoomService.disbandRoom(roomId)
-            .subscribe {
+        gameRoomService.findById(roomId)
+            .flatMap { room ->
+                gameRoomService.disbandRoom(roomId)
+                    .thenReturn(room)
+            }
+            .subscribe { room ->
+                val disbandEvent = Event(EventType.ROOM_DISBANDED, roomId.toString(), "System")
+                room.playerIds?.forEach { playerId ->
+                    userRooms.remove(playerId)
+                    sessions[playerId]?.let { session ->
+                        session.send(Mono.just(session.textMessage(objectMapper.writeValueAsString(disbandEvent))))
+                            .subscribe()
+                    }
+                }
                 broadcastRoomUpdate()
             }
     }
@@ -58,7 +86,41 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService) : WebSo
         broadcastRoomUpdate()
     }
 
-    private fun broadcastRoomUpdate() {
+
+    private fun handleRoomJoined(event: Event, username: String) {
+        val roomId = event.content?.toLongOrNull() ?: return
+        gameRoomService.joinRoom(roomId, username)
+            .doOnError { logger.error("Ошибка при присоединении к комнате $roomId", it) }
+            .subscribe { room ->
+                userRooms[username] = roomId
+                broadcastRoomUpdate(room)
+                broadcastRoomListUpdate()
+
+                // Отправляем подтверждение присоединения пользователю
+                val joinConfirmation = Event(EventType.ROOM_JOIN_CONFIRMATION, objectMapper.writeValueAsString(room), "System")
+                sessions[username]?.send(Mono.just(sessions[username]!!.textMessage(objectMapper.writeValueAsString(joinConfirmation))))?.subscribe()
+            }
+    }
+
+    private fun handleRoomLeft(event: Event, username: String) {
+        val roomId = event.content?.toLongOrNull() ?: return
+        userRooms.remove(username)
+        gameRoomService.leaveRoom(roomId, username)
+            .flatMap { updatedRoom ->
+                if (updatedRoom.status == GameRoom.GameRoomStatus.DISBANDED) {
+                    gameRoomService.disbandRoom(roomId).thenReturn(updatedRoom)
+                } else {
+                    Mono.just(updatedRoom)
+                }
+            }
+            .subscribe { updatedRoom ->
+                broadcastRoomUpdate(updatedRoom)
+                broadcastRoomListUpdate()
+                val confirmationEvent = Event(EventType.ROOM_LEFT_CONFIRMATION, "", "System")
+                sessions[username]?.send(Mono.just(sessions[username]!!.textMessage(objectMapper.writeValueAsString(confirmationEvent))))?.subscribe()
+            }
+    }
+    private fun broadcastRoomListUpdate() {
         gameRoomService.getAvailableRooms()
             .collectList()
             .subscribe { rooms ->
@@ -67,36 +129,29 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService) : WebSo
             }
     }
 
-    private fun handleRoomJoined(event: Event) {
-        val roomId = event.content?.toLongOrNull() ?: return
-        gameRoomService.findById(roomId)
-            .doOnError { logger.error("Ошибка при поиске комнаты $roomId", it) }
-            .subscribe { room ->
-                try {
-                    broadcastToRoom(room, Event(EventType.ROOM_UPDATE, objectMapper.writeValueAsString(room), "System"))
-                    if (room.playerIds?.size == room.maxPlayers) {
-                        startGameCountdown(room)
-                    }
-                } catch (e: Exception) {
-                    logger.error("Ошибка при обработке присоединения к комнате", e)
-                }
+    private fun broadcastRoomUpdate(room: GameRoom? = null) {
+        if (room != null) {
+            val updateEvent = Event(EventType.ROOM_UPDATE, objectMapper.writeValueAsString(room), "System")
+            broadcastToRoom(room, updateEvent)
+        }
+
+        gameRoomService.getAvailableRooms()
+            .collectList()
+            .subscribe { rooms ->
+                val updateEvent = Event(EventType.ROOM_LIST_UPDATE, objectMapper.writeValueAsString(rooms), "System")
+                broadcastMessage(updateEvent)
             }
     }
 
-    private fun startGameCountdown(room: GameRoom) {
-        val roomId = room.id ?: return
-        scheduler.schedule({
-            gameRoomService.startGame(roomId)
-                .subscribe { updatedRoom ->
-                    broadcastToRoom(updatedRoom, Event(EventType.GAME_STARTED, "Игра началась!", "System"))
-                }
-        }, 10, TimeUnit.SECONDS)
-    }
-
     private fun broadcastToRoom(room: GameRoom, event: Event) {
+        val message = toString(event)
         room.playerIds?.forEach { playerId ->
             sessions[playerId]?.let { session ->
-                session.send(Mono.just(session.textMessage(toString(event)))).subscribe()
+                if (session.isOpen) {
+                    session.send(Mono.just(session.textMessage(message)))
+                        .doOnError { logger.error("Ошибка отправки сообщения", it) }
+                        .subscribe()
+                }
             }
         }
     }

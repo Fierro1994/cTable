@@ -15,7 +15,7 @@ data class GameRoom(
     var status: GameRoomStatus? = null
 ) {
     enum class GameRoomStatus {
-        WAITING, STARTING, IN_PROGRESS, FINISHED
+        WAITING, STARTING, IN_PROGRESS, FINISHED, DISBANDED
     }
 
     companion object {

@@ -1,23 +1,26 @@
 .game-rooms-container {
   margin: 10px;
-  height: 30vh;
+  height: auto;
   width: 95%;
   padding: 20px;
   background-color: #f5f5f5;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
+
 .game-rooms-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
 }
+
 .game-rooms-title {
   font-size: 24px;
   color: #2c3e50;
 }
-.refresh-button {
+
+.refresh-button, .create-room-button {
   background-color: #3498db;
   color: white;
   border: none;
@@ -27,48 +30,107 @@
   transition: background-color 0.3s;
   font-size: 14px;
 }
-.refresh-button:hover {
+
+.refresh-button:hover, .create-room-button:hover {
   background-color: #2980b9;
 }
-.game-rooms-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-}
-.game-room {
+
+.game-rooms-table {
+  width: 100%;
+  border-collapse: collapse;
   background-color: white;
-  border-radius: 8px;
-  padding: 15px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
 }
-.game-room:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+
+.game-rooms-table th, .game-rooms-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
 }
-.game-room-name {
-  font-size: 18px;
+
+.game-rooms-table th {
+  background-color: #f0f0f0;
   font-weight: bold;
   color: #2c3e50;
-  margin-bottom: 10px;
 }
-.game-room-info {
-  font-size: 14px;
-  color: #7f8c8d;
+
+.game-rooms-table tr:hover {
+  background-color: #f5f5f5;
 }
+
 .join-button {
-  display: block;
-  width: 100%;
   background-color: #2ecc71;
   color: white;
   border: none;
-  padding: 8px 0;
-  border-radius: 5px;
+  padding: 6px 12px;
+  border-radius: 3px;
   cursor: pointer;
   transition: background-color 0.3s;
   font-size: 14px;
-  margin-top: 10px;
 }
+
 .join-button:hover {
   background-color: #27ae60;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 300px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.modal-content select {
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.modal-content button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#createRoomSubmitBtn {
+  background-color: #2ecc71;
+  color: white;
+}
+
+#createRoomCancelBtn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+#createRoomSubmitBtn:hover {
+  background-color: #27ae60;
+}
+
+#createRoomCancelBtn:hover {
+  background-color: #c0392b;
 }

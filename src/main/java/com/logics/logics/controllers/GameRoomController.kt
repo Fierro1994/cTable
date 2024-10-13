@@ -37,28 +37,12 @@ class GameRoomController(private val gameRoomService: GameRoomService) {
         return gameRoomService.getAvailableRooms()
     }
 
-    @PostMapping("/{roomId}/join")
-    fun joinRoom(
-        @AuthenticationPrincipal userDetails: UserDetails,
-        @PathVariable roomId: Long
-    ): Mono<ResponseEntity<GameRoom>> {
-        return gameRoomService.joinRoom(roomId, userDetails.username)
-            .map { ResponseEntity.ok(it) }
-            .onErrorResume { Mono.just(ResponseEntity.badRequest().build()) }
-    }
+
     @GetMapping("/{roomId}")
     fun getRoomById(@PathVariable roomId: Long): Mono<ResponseEntity<GameRoom>> {
         return gameRoomService.findById(roomId)
             .map { room -> ResponseEntity.ok(room) }
             .defaultIfEmpty(ResponseEntity.notFound().build())  // Возвращаем 404, если комната не найдена
-    }
-    @PostMapping("/{roomId}/leave")
-    fun leaveRoom(
-        @AuthenticationPrincipal userDetails: UserDetails,
-        @PathVariable roomId: Long
-    ): Mono<ResponseEntity<Void>> {
-        return gameRoomService.leaveRoom(roomId, userDetails.username)
-            .then(Mono.just(ResponseEntity.ok().build()))
     }
 
     @PostMapping("/{roomId}/start")
@@ -66,16 +50,5 @@ class GameRoomController(private val gameRoomService: GameRoomService) {
         return gameRoomService.startGame(roomId)
             .map { ResponseEntity.ok(it) }
             .onErrorResume { Mono.just(ResponseEntity.badRequest().build()) }
-    }
-
-    @PostMapping("/{roomId}/disband")
-    fun disbandRoom(@PathVariable roomId: Long): Mono<ResponseEntity<Void>> {
-        return gameRoomService.disbandRoom(roomId)
-            .then(Mono.just(ResponseEntity.ok().build<Void>()))
-            .doOnSuccess { logger.info("Комната $roomId успешно распущена") }
-            .onErrorResume { error ->
-                logger.error("Ошибка при роспуске комнаты $roomId: ${error.message}")
-                Mono.just(ResponseEntity.badRequest().build<Void>())
-            }
     }
 }

@@ -1,20 +1,30 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="gameRoomsList" class="game-rooms-container">
   <div class="game-rooms-display">
-  <div class="game-rooms-header">
-    <h2 class="game-rooms-title">Игровые комнаты</h2>
-    <button class="refresh-button" id="refreshRoomsBtn">Обновить</button>
-    <button class="create-room-button" id="createRoomBtn">Создать комнату</button>
-  </div>
-  <div id="gameRoomsList" class="game-rooms-list">
-    <!-- Здесь будут отображаться игровые комнаты -->
+    <div class="game-rooms-header">
+      <h2 class="game-rooms-title">Игровые комнаты</h2>
+      <button class="refresh-button" id="refreshRoomsBtn">Обновить</button>
+      <button class="create-room-button" id="createRoomBtn">Создать комнату</button>
+    </div>
+    <table id="gameRoomsList" class="game-rooms-table">
+      <thead>
+      <tr>
+        <th>Название комнаты</th>
+        <th>Категория</th>
+        <th>Игроки</th>
+        <th>Время</th>
+        <th>Действие</th>
+      </tr>
+      </thead>
+      <tbody>
+      <!-- Здесь будут отображаться игровые комнаты -->
+      </tbody>
+    </table>
   </div>
 
-</div>
-  <div id="createRoomModal" class="modal" style="display: none;">
+  <div id="createRoomModal" class="modal">
     <div class="modal-content">
       <h3>Создать новую комнату</h3>
-      <input type="text" id="roomName" placeholder="Название комнаты">
       <select id="maxPlayers">
         <option value="2">2 игрока</option>
         <option value="4">4 игрока</option>
@@ -22,7 +32,13 @@
         <option value="8">8 игроков</option>
         <option value="12">12 игроков</option>
       </select>
-      <input type="text" id="roomCategory" placeholder="Категория игры">
+      <select id="roomCategory">
+        <option value="Математика">Математика</option>
+        <option value="История">История</option>
+        <option value="Наука">Наука</option>
+        <option value="Литература">Литература</option>
+        <option value="География">География</option>
+      </select>
       <button id="createRoomSubmitBtn">Создать комнату</button>
       <button id="createRoomCancelBtn">Отмена</button>
     </div>

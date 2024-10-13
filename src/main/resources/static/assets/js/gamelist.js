@@ -4,34 +4,31 @@ document.addEventListener('DOMContentLoaded', function() {
   let roomsSocket = null;
   let username = document.getElementById('username').value;
 
+
   initializeGameRooms();
 
   const savedRoomId = localStorage.getItem('currentRoomId');
   if (savedRoomId) {
-    // Если в localStorage есть сохраненный roomId, пытаемся присоединиться к комнате
-    joinRoom(savedRoomId)
-      .catch(() => {
+    joinRoom(savedRoomId).catch(() => {
       console.log('Не удалось восстановить комнату, обновляем список комнат.');
       refreshRooms();
     });
   } else {
-    // Если нет сохраненной комнаты, просто обновляем список комнат
     refreshRooms();
   }
 
-  // Функция для открытия WebSocket подключения
   function connectToRoomsSocket() {
     if (roomsSocket && (roomsSocket.readyState === WebSocket.OPEN || roomsSocket.readyState === WebSocket.CONNECTING)) {
       console.log("WebSocket уже подключен или в процессе подключения, readyState:", roomsSocket.readyState);
-      return;  // Прекращаем попытку подключения, если сокет уже открыт или подключается
+      return;
     }
 
     console.log("Создание нового WebSocket соединения");
-    roomsSocket = new WebSocket('ws://localhost:8080/rooms');
+    roomsSocket = new WebSocket(`ws://localhost:8080/rooms?username=${username}`);
 
     roomsSocket.onopen = () => {
       console.log("WebSocket открыт, readyState:", roomsSocket.readyState);
-      refreshRooms();  // Обновляем список комнат при успешном подключении
+      refreshRooms();
     };
 
     roomsSocket.onmessage = (event) => {
@@ -41,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     roomsSocket.onclose = (event) => {
       console.log("WebSocket закрыт, код:", event.code, "причина:", event.reason);
-      // Можно добавить логику автоматического переподключения через какое-то время
     };
 
     roomsSocket.onerror = (error) => {
@@ -49,12 +45,20 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
+
+
   function handleRoomMessage(message) {
     console.log("Обрабатываем сообщение:", message);
     switch (message.type) {
+      case 'ROOM_LEFT_CONFIRMATION':
+        currentRoom = null;
+        localStorage.removeItem('currentRoomId');
+        displayRooms();
+        break;
       case 'ROOM_UPDATE':
-        if (currentRoom && currentRoom.id === message.roomId) {
-          currentRoom = JSON.parse(message.content);
+        const updatedRoom = JSON.parse(message.content);
+        if (currentRoom && currentRoom.id === updatedRoom.id) {
+          currentRoom = updatedRoom;
           displayRoomDetails(currentRoom);
         }
         break;
@@ -64,25 +68,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         break;
       case 'ROOM_DISBANDED':
-        console.log("Получено сообщение о роспуске комнаты:", message);
-
-        // Проверяем, что текущая комната — это та, которая была распущена
-        if (currentRoom && currentRoom.id.toString() === message.content) {
-          alert('Комната была распущена');
-          currentRoom = null;  // Очищаем информацию о текущей комнате
-        }
-
-        // Обновляем список доступных комнат
-        refreshRooms();
+        handleRoomDisbanded();
         break;
-      case 'ROOM_LIST_UPDATE':  // Обработка обновления списка комнат
+      case 'ROOM_LIST_UPDATE':
         console.log("Получено обновление списка комнат:", message);
-        rooms = JSON.parse(message.content);  // Обновляем список комнат
-        displayRooms();  // Отображаем комнаты
+        rooms = JSON.parse(message.content);
+        if (rooms.length === 0) {
+          console.log("Список комнат пуст");
+        }
+        if (!currentRoom) {
+          displayRooms();
+        }
+        break;
+      case 'ROOM_JOIN_CONFIRMATION':
+        const joinedRoom = JSON.parse(message.content);
+        currentRoom = joinedRoom;
+        localStorage.setItem('currentRoomId', joinedRoom.id);
+        displayRoomDetails(currentRoom);
         break;
       default:
         console.log("Неизвестный тип сообщения:", message.type);
     }
+  }
+
+
+  function handleRoomDisbanded() {
+    currentRoom = null;
+    localStorage.removeItem('currentRoomId');
+    displayRooms();
   }
 
 
@@ -101,9 +114,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Функция для создания новой комнаты
   async function createRoom() {
     try {
-      const name = document.getElementById('roomName').value;
       const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
       const category = document.getElementById('roomCategory').value;
+      const name = username + "'s Room";
 
       const response = await fetch('/api/rooms', {
         method: 'POST',
@@ -116,25 +129,17 @@ document.addEventListener('DOMContentLoaded', function() {
       if (response.ok) {
         const createdRoom = await response.json();
         currentRoom = createdRoom;
-        currentRoom.playerIds = [username]; // Добавляем создателя в список игроков
-
-        // Сохраняем ID созданной комнаты в localStorage
         localStorage.setItem('currentRoomId', createdRoom.id);
-
-        // Закрываем модальное окно создания комнаты
         closeCreateRoomModal();
 
-        // Отправляем событие через WebSocket
         const createdEvent = {
           type: 'ROOM_CREATED',
           sender: username,
-          content: JSON.stringify(currentRoom)
+          content: createdRoom.id.toString()
         };
         roomsSocket.send(JSON.stringify(createdEvent));
 
-        // Отображаем информацию о новой комнате сразу после её создания
         displayRoomDetails(currentRoom);
-
       } else {
         const errorData = await response.json();
         alert(`Ошибка при создании комнаты: ${errorData.message || response.statusText}`);
@@ -144,7 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
       alert('Произошла ошибка при создании комнаты');
     }
   }
-
   // Функция для получения значения куки по имени
   function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -154,102 +158,106 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
   // Функция для отображения списка комнат
+
   function displayRooms() {
     const roomsContainer = document.querySelector('.game-rooms-display');
 
-    // Если текущая комната выбрана, показываем только её детали
     if (currentRoom) {
       displayRoomDetails(currentRoom);
       return;
     }
 
-    // Если текущая комната не выбрана, отображаем список доступных комнат
     roomsContainer.innerHTML = `
-    <div class="game-rooms-header">
-      <h2 class="game-rooms-title">Игровые комнаты</h2>
-      <button class="refresh-button" id="refreshRoomsBtn">Обновить</button>
-      <button class="create-room-button" id="createRoomBtn">Создать комнату</button>
-    </div>
-    <div id="gameRoomsList" class="game-rooms-list">
-      <h3>Доступные комнаты</h3>
-      ${rooms.length === 0 ? '<p>Нет доступных комнат</p>' : ''}
-    </div>
-  `;
+            <div class="game-rooms-header">
+                <h2 class="game-rooms-title">Игровые комнаты</h2>
+                <button class="refresh-button" id="refreshRoomsBtn">Обновить</button>
+                <button class="create-room-button" id="createRoomBtn">Создать комнату</button>
+            </div>
+            <table id="gameRoomsList" class="game-rooms-table">
+                <thead>
+                    <tr>
+                        <th>Название комнаты</th>
+                        <th>Категория</th>
+                        <th>Игроки</th>
+                        <th>Время</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rooms.length === 0 ? '<tr><td colspan="5">Нет доступных комнат. Вы можете создать новую!</td></tr>' : ''}
+                </tbody>
+            </table>
+        `;
 
-    const gameRoomsList = document.getElementById('gameRoomsList');
+    const gameRoomsList = document.querySelector('#gameRoomsList tbody');
 
     if (rooms.length > 0) {
       rooms.forEach(room => {
-        const roomElement = document.createElement('div');
-        roomElement.className = 'game-room';
+        const roomElement = document.createElement('tr');
+        const timeLeft = getTimeLeft(room.createdAt);
         roomElement.innerHTML = `
-        <div class="game-room-name">${room.name}</div>
-        <div class="game-room-info">Игроки: ${room.playerIds.length}/${room.maxPlayers}</div>
-        <div class="game-room-info">Категория: ${room.category}</div>
-        <button class="join-button" data-room-id="${room.id}">Присоединиться</button>
+        <td>${room.name}</td>
+        <td>${room.category}</td>
+        <td>${room.playerIds.length}/${room.maxPlayers}</td>
+        <td class="room-timer" data-created="${room.createdAt}">${timeLeft}</td>
+        <td><button class="join-button" data-room-id="${room.id}">Присоединиться</button></td>
       `;
         gameRoomsList.appendChild(roomElement);
       });
     }
 
-    // Добавляем обработчики событий для кнопок
     document.getElementById('refreshRoomsBtn').addEventListener('click', refreshRooms);
     document.getElementById('createRoomBtn').addEventListener('click', openCreateRoomModal);
     document.querySelectorAll('.join-button').forEach(button => {
       button.addEventListener('click', () => joinRoom(button.dataset.roomId));
     });
+
+    startRoomTimers();
   }
 
+
+
+
+  function getTimeLeft(createdAt) {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const timePassed = now - created;
+    const timeLeft = Math.max(0, 20 * 60 * 1000 - timePassed);
+    const minutes = Math.floor(timeLeft / (60 * 1000));
+    const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  function startRoomTimers() {
+    setInterval(() => {
+      document.querySelectorAll('.room-timer').forEach(timer => {
+        const createdAt = timer.dataset.created;
+        timer.textContent = getTimeLeft(createdAt);
+        if (timer.textContent === '00:00') {
+          const roomId = timer.closest('tr').querySelector('.join-button').dataset.roomId;
+          disbandRoom(roomId);
+        }
+      });
+    }, 1000);
+  }
 
   // Функция для присоединения к комнате
+
+
   async function joinRoom(roomId) {
-    try {
-      const response = await fetch(`/api/rooms/${roomId}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.error('Комната не найдена. Возможно, она была удалена.');
-          localStorage.removeItem('currentRoomId');  // Удаляем из localStorage
-          refreshRooms();  // Обновляем список комнат
-          return;
-        } else {
-          alert('Ошибка при получении данных комнаты');
-          return;
-        }
-      }
-
-      const room = await response.json();
-
-      // Проверяем, есть ли уже текущий пользователь в списке игроков
-      if (room.playerIds && room.playerIds.includes(username)) {
-        console.log('Вы уже находитесь в этой комнате.');
-        currentRoom = room;  // Обновляем состояние текущей комнаты
-        displayRoomDetails(room);  // Отображаем информацию о комнате
-        return;  // Выход, если пользователь уже в комнате
-      }
-
-      // Если игрока нет в комнате, присоединяемся к ней
-      const joinResponse = await fetch(`/api/rooms/${roomId}/join`, { method: 'POST' });
-      if (joinResponse.ok) {
-        currentRoom = await joinResponse.json();
-        displayRoomDetails(currentRoom);
-
-        // Сохраняем текущую комнату в localStorage
-        localStorage.setItem('currentRoomId', roomId);
-
-        const joinEvent = {
-          type: 'ROOM_JOINED',
-          sender: username,
-          content: roomId.toString()
-        };
-        roomsSocket.send(JSON.stringify(joinEvent));
-      } else {
-        alert('Ошибка при присоединении к комнате');
-      }
-    } catch (error) {
-      console.error('Ошибка при присоединении к комнате:', error);
-      alert('Ошибка при присоединении к комнате');
+    if (roomsSocket && roomsSocket.readyState === WebSocket.OPEN) {
+      const joinEvent = {
+        type: 'ROOM_JOINED',
+        sender: username,
+        content: roomId.toString()
+      };
+      roomsSocket.send(JSON.stringify(joinEvent));
+    } else {
+      console.error("WebSocket не подключен. Попытка повторного подключения...");
+      connectToRoomsSocket();
     }
   }
+
   // Функция для отображения деталей комнаты
   function displayRoomDetails(room) {
     const roomsList = document.getElementById('gameRoomsList');
@@ -298,27 +306,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // Функция для роспуска комнаты
   async function disbandRoom(roomId) {
     try {
-      const response = await fetch(`/api/rooms/${roomId}/disband`, { method: 'POST' });
-      if (response.ok) {
-        console.log('Комната успешно распущена');
-        currentRoom = null;
-
-        // Удаляем текущую комнату из localStorage
-        localStorage.removeItem('currentRoomId');
-
         const disbandEvent = {
           type: 'ROOM_DISBANDED',
           sender: username,
           content: roomId.toString()
         };
         roomsSocket.send(JSON.stringify(disbandEvent));
+        handleRoomDisbanded();
 
-        refreshRooms();
-        displayRooms();
-      } else {
-        console.error('Ошибка при роспуске комнаты:', response.status, response.statusText);
-        alert('Ошибка при роспуске комнаты: ' + response.statusText);
-      }
     } catch (error) {
       console.error('Ошибка при роспуске комнаты:', error);
       alert('Ошибка при роспуске комнаты: ' + error.message);
@@ -326,29 +321,15 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Функция для выхода из комнаты
-  async function leaveRoom(roomId) {
-    try {
-      const response = await fetch(`/api/rooms/${roomId}/leave`, { method: 'POST' });
-      if (response.ok) {
-        currentRoom = null;
-        refreshRooms();
+  function leaveRoom(roomId) {
+    const event = {
+      type: 'ROOM_LEFT',
+      content: roomId.toString()
+    };
+    roomsSocket.send(JSON.stringify(event));
 
-        // Удаляем текущую комнату из localStorage
-        localStorage.removeItem('currentRoomId');
-
-        const leaveEvent = {
-          type: 'ROOM_LEFT',
-          sender: username,
-          content: roomId.toString()
-        };
-        roomsSocket.send(JSON.stringify(leaveEvent));
-      } else {
-        alert('Ошибка при выходе из комнаты');
-      }
-    } catch (error) {
-      console.error('Ошибка при выходе из комнаты:', error);
-      alert('Ошибка при выходе из комнаты');
-    }
+    // Добавляем обновление списка комнат после выхода
+    refreshRooms();
   }
 
   function refreshRooms() {
@@ -378,9 +359,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (createRoomSubmitBtn) createRoomSubmitBtn.addEventListener('click', createRoom);
     if (createRoomCancelBtn) createRoomCancelBtn.addEventListener('click', closeCreateRoomModal);
 
-    // Обязательно вызываем refreshRooms при инициализации
     connectToRoomsSocket();
-    refreshRooms();  // Обновляем список комнат после подключения
+    refreshRooms();
   }
 
   document.addEventListener('DOMContentLoaded', initializeGameRooms);

@@ -11,11 +11,7 @@ import reactor.core.publisher.Mono
 class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
 
     private val log = LoggerFactory.getLogger(GameRoomService::class.java)
-    private fun cleanId(id: String): String {
 
-        val cleaned = id.replace(Regex("[{}\"\\\\/]"), "").trim()
-        return if (cleaned == id) cleaned else cleanId(cleaned)
-    }
     fun createRoom(creatorId: String, name: String, maxPlayers: Int, category: String): Mono<GameRoom> {
 
         val newRoom = GameRoom(
@@ -66,17 +62,47 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
             }
             .doOnError { log.error("Ошибка при присоединении к комнате", it) }
     }
+    fun cleanId(id: String): String {
+        return id.replace(Regex("[{}\"\\\\/]"), "").trim() // Убираем фигурные скобки и любые другие нежелательные символы
+    }
+
     fun leaveRoom(roomId: Long, playerId: String): Mono<GameRoom> {
         return gameRoomRepository.findById(roomId)
             .flatMap { room ->
-                val playerIds = room.playerIds?.toMutableList() ?: mutableListOf()
-                playerIds.remove(playerId)
-                room.playerIds = playerIds
-                if (playerIds.isEmpty()) {
-                    gameRoomRepository.delete(room).then(Mono.empty())
+                // Очищаем все идентификаторы игроков
+                val playerIds: MutableList<String> = room.playerIds?.map { cleanId(it) }?.toMutableList() ?: mutableListOf()
+
+                log.info("Текущие игроки до удаления: $playerIds")
+
+                // Удаление игрока из списка
+                if (playerIds.contains(cleanId(playerId))) {
+                    playerIds.remove(cleanId(playerId))
+                    log.info("Игрок $playerId удален из комнаты $roomId.")
                 } else {
-                    gameRoomRepository.save(room)
+                    log.warn("Игрок $playerId не найден в списке игроков комнаты $roomId.")
                 }
+
+                // Обновляем статус комнаты, если список пуст
+                val updatedRoom = if (playerIds.isEmpty()) {
+                    room.copy(
+                        playerIds = playerIds,
+                        status = GameRoom.GameRoomStatus.DISBANDED // Если нет игроков, комната распускается
+                    )
+                } else {
+                    room.copy(
+                        playerIds = playerIds,
+                        status = GameRoom.GameRoomStatus.WAITING // Комната остается в ожидании, если есть игроки
+                    )
+                }
+
+                // Сохраняем изменения в базе данных
+                gameRoomRepository.save(updatedRoom)
+            }
+            .doOnSuccess { updatedRoom ->
+                log.info("Player $playerId успешно вышел из комнаты $roomId. Обновленные данные комнаты: $updatedRoom")
+            }
+            .doOnError { error ->
+                log.error("Ошибка при выходе игрока $playerId из комнаты $roomId: ${error.message}")
             }
     }
 
