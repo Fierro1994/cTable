@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="gamePanel" class="game-panel">
   <div class="left-section">
-    <a href="/profile" class="profile-link">
+    <a href="#" class="profile-link" id="profile-link">
       <i class="fas fa-user profile-icon"></i>
       <span th:text="${username}">Username</span>
     </a>
@@ -16,5 +16,12 @@
       <button type="submit" class="logout-button">Выйти</button>
     </form>
   </div>
+  <div id="profile-popup" class="profile-popup">
+    <div class="profile-content">
+      <span class="close">&times;</span>
+      <h2 th:text="${username}"></h2>
+    </div>
+  </div>
 </div>
+
 </html>
