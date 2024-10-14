@@ -9,7 +9,9 @@ data class User(
     var id: Long? = null,
     var username: String? = null,
     var password: String? = null,
-    var coins: Int = 0
+    var coins: Int = 0,
+    var status: String = "offline"
+
 ) {
     companion object {
         @JvmStatic
@@ -21,12 +23,13 @@ data class User(
         private var username: String? = null
         private var password: String? = null
         private var coins: Int = 0
+        private var status: String = "offline"
 
         fun id(id: Long?) = apply { this.id = id }
         fun username(username: String?) = apply { this.username = username }
         fun password(password: String?) = apply { this.password = password }
         fun coins(coins: Int) = apply { this.coins = coins }
-
+        fun status(status: String) = apply { this.status = status }
         fun build() = User(id, username, password, coins)
     }
 }

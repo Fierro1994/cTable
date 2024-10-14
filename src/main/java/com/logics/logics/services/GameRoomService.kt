@@ -13,7 +13,6 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
     private val log = LoggerFactory.getLogger(GameRoomService::class.java)
 
     fun createRoom(creatorId: String, name: String, maxPlayers: Int, category: String): Mono<GameRoom> {
-
         val newRoom = GameRoom(
             name = name,
             creatorId = creatorId,
@@ -22,9 +21,11 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
             playerIds = mutableListOf(creatorId),
             status = GameRoom.GameRoomStatus.WAITING
         )
+
         return gameRoomRepository.save(newRoom)
             .doOnError { error -> log.error("Ошибка при создании комнаты: {}", error.message) }
     }
+
 
     fun getAvailableRooms(): Flux<GameRoom> {
         return gameRoomRepository.findByStatus(GameRoom.GameRoomStatus.WAITING)

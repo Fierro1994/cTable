@@ -129,6 +129,28 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
 
+  function updateRoomTimer() {
+    const timerElement = document.getElementById('roomTimer');
+
+    if (currentRoom && timerElement) {
+      const now = Date.now();
+      const createdAt = new Date(currentRoom.createdAt).getTime();
+      const timeLeft = 10 * 60 * 1000 - (now - createdAt);
+
+      if (timeLeft > 0) {
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        timerElement.textContent =
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        setTimeout(updateRoomTimer, 1000);
+      } else {
+        timerElement.textContent = '00:00';
+        disbandRoom(currentRoom.id);
+      }
+    }
+  }
+
   function displayRooms() {
     const roomsContainer = document.querySelector('.game-rooms-display');
 
@@ -138,26 +160,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     roomsContainer.innerHTML = `
-            <div class="game-rooms-header">
-                <h2 class="game-rooms-title">Игровые комнаты</h2>
-                <button class="refresh-button" id="refreshRoomsBtn">Обновить</button>
-                <button class="create-room-button" id="createRoomBtn">Создать комнату</button>
-            </div>
-            <table id="gameRoomsList" class="game-rooms-table">
-                <thead>
-                    <tr>
-                        <th>Название комнаты</th>
-                        <th>Категория</th>
-                        <th>Игроки</th>
-                        <th>Время</th>
-                        <th>Действие</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rooms.length === 0 ? '<tr><td colspan="5">Нет доступных комнат. Вы можете создать новую!</td></tr>' : ''}
-                </tbody>
-            </table>
-        `;
+      <div class="game-rooms-header">
+        <h2 class="game-rooms-title">Игровые комнаты</h2>
+        <button class="refresh-button" id="refreshRoomsBtn">Обновить</button>
+        <button class="create-room-button" id="createRoomBtn">Создать комнату</button>
+      </div>
+      <table id="gameRoomsList" class="game-rooms-table">
+        <thead>
+          <tr>
+            <th>Название комнаты</th>
+            <th>Категория</th>
+            <th>Игроки</th>
+            <th>Время</th>
+            <th>Действие</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rooms.length === 0 ? '<tr><td colspan="5">Нет доступных комнат. Вы можете создать новую!</td></tr>' : ''}
+        </tbody>
+      </table>
+    `;
 
     const gameRoomsList = document.querySelector('#gameRoomsList tbody');
 
@@ -166,31 +188,53 @@ document.addEventListener('DOMContentLoaded', function() {
         const roomElement = document.createElement('tr');
         const timeLeft = getTimeLeft(room.createdAt);
         roomElement.innerHTML = `
-        <td>${room.name}</td>
-        <td>${room.category}</td>
-        <td>${room.playerIds.length}/${room.maxPlayers}</td>
-        <td class="room-timer" data-created="${room.createdAt}">${timeLeft}</td>
-        <td><button class="join-button" data-room-id="${room.id}">Присоединиться</button></td>
-      `;
+          <td>${room.name}</td>
+          <td>${room.category}</td>
+          <td>${room.playerIds.length}/${room.maxPlayers}</td>
+          <td class="room-timer" data-created="${room.createdAt}">${timeLeft}</td>
+          <td><button class="join-button" data-room-id="${room.id}">Присоединиться</button></td>
+        `;
         gameRoomsList.appendChild(roomElement);
       });
     }
-    document.getElementById('refreshRoomsBtn').style.display = 'inline-block';
-    document.getElementById('createRoomBtn').style.display = 'inline-block';
+
     document.getElementById('refreshRoomsBtn').addEventListener('click', refreshRooms);
     document.getElementById('createRoomBtn').addEventListener('click', openCreateRoomModal);
     document.querySelectorAll('.join-button').forEach(button => {
       button.addEventListener('click', () => joinRoom(button.dataset.roomId));
     });
 
-    startRoomTimers();
+    startRoomListTimers();
+  }
+  function getTimeLeft(createdAt) {
+    const now = Date.now();
+    const created = new Date(createdAt).getTime();
+    const timePassed = now - created;
+    const timeLeft = Math.max(0, 20 * 60 * 1000 - timePassed);
+    const minutes = Math.floor(timeLeft / (60 * 1000));
+    const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
+  function startRoomListTimers() {
+    setInterval(() => {
+      document.querySelectorAll('.room-timer').forEach(timer => {
+        const createdAt = parseInt(timer.dataset.created);
+        timer.textContent = getTimeLeft(createdAt);
+        if (timer.textContent === '00:00') {
+          const roomRow = timer.closest('tr');
+          if (roomRow) {
+            roomRow.remove();
+          }
+        }
+      });
+    }, 1000);
+  }
   function getTimeLeft(createdAt) {
     const now = new Date();
     const created = new Date(createdAt);
     const timePassed = now - created;
-    const timeLeft = Math.max(0, 20 * 60 * 1000 - timePassed);
+    const timeLeft = Math.max(0, 10 * 60 * 1000 - timePassed);
     const minutes = Math.floor(timeLeft / (60 * 1000));
     const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
@@ -236,18 +280,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     roomsList.innerHTML = `
-    <h3 class="room-name">Комната: ${room.name}</h3>
-<div class="room-category">Категория: ${room.category}</div>
-<div class="room-players">Игроки: ${room.playerIds.length}/${room.maxPlayers}</div>
-<ul class="player-list">
-  ${room.playerIds.map(playerId => `<li class="player-item">${playerId}</li>`).join('')}
-</ul>
-${room.creatorId === username ?
-    `<button class="start-game-btn" id="startGameBtn">Начать игру</button>
-     <button class="disband-room-btn" id="disbandRoomBtn">Распустить комнату</button>` :
-    `<button class="leave-room-btn" id="leaveRoomBtn">Покинуть комнату</button>`
-}
-  `;
+      <h3 class="room-name">Комната: ${room.name}</h3>
+      <div class="room-category">Категория: ${room.category}</div>
+      <div class="room-players">Игроки: ${room.playerIds.length}/${room.maxPlayers}</div>
+      <div id="roomTimer"></div>
+      <ul class="player-list">
+        ${room.playerIds.map(playerId => `<li class="player-item">${playerId}</li>`).join('')}
+      </ul>
+      ${room.creatorId === username ?
+        `<button class="start-game-btn" id="startGameBtn">Начать игру</button>
+         <button class="disband-room-btn" id="disbandRoomBtn">Распустить комнату</button>` :
+        `<button class="leave-room-btn" id="leaveRoomBtn">Покинуть комнату</button>`
+      }
+    `;
 
     // Hide buttons when inside a room
     const refreshBtn = document.getElementById('refreshRoomsBtn');
@@ -266,6 +311,8 @@ ${room.creatorId === username ?
     } else {
       document.getElementById('leaveRoomBtn').addEventListener('click', () => leaveRoom(room.id));
     }
+
+    updateRoomTimer();
   }
 
   async function startGame(roomId) {

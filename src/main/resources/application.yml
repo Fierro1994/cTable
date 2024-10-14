@@ -1,4 +1,7 @@
 spring:
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/logic
     username: postgres

@@ -1,35 +1,8 @@
-<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="playerList" class="player-list-container">
   <h2 class="player-list-title">Список игроков</h2>
+  <input type="text" id="playerSearch" placeholder="Поиск по нику" />
   <ul id="playerList" class="player-list">
     <!-- Здесь будут отображаться игроки -->
   </ul>
 </div>
-
-<script th:inline="javascript">
-  // Имитация данных об игроках
-  const players = [
-    { id: 1, name: "Игрок 1", status: "онлайн" },
-    { id: 2, name: "Игрок 2", status: "в игре" },
-    { id: 3, name: "Игрок 3", status: "онлайн" }
-  ];
-
-  function displayPlayers() {
-    const playerList = document.getElementById('playerList');
-    playerList.innerHTML = '';
-    players.forEach(player => {
-      const playerElement = document.createElement('li');
-      playerElement.className = 'player-item';
-      playerElement.innerHTML = `
-        <span class="player-name">${player.name}</span>
-        <span class="player-status ${player.status === 'онлайн' ? 'online' : 'in-game'}">${player.status}</span>
-      `;
-      playerList.appendChild(playerElement);
-    });
-  }
-
-  // Отобразить игроков при загрузке страницы
-  displayPlayers();
-</script>
-</html>

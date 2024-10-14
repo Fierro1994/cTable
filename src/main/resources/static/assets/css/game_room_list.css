@@ -24,13 +24,10 @@ h3{
   margin-left: 10px;
 }
 
-.refresh-button, .create-room-button {
-  display: none; /* Hidden when in the room list or inside a room */
-}
 
 .game-rooms-table {
   width: 100%;
-  border-collapse: collapse; /* Add this to remove space between cells */
+  border-collapse: collapse;
 }
 
 .game-rooms-table th, .game-rooms-table td {
@@ -43,9 +40,9 @@ h3{
   background-color: #ecf0f1;
   font-weight: bold;
   color: #2c3e50;
-  position: sticky; /* Make header sticky */
-  top: 0; /* Stick to the top */
-  z-index: 1; /* Ensure header is above other cells */
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 

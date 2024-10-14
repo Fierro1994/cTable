@@ -4,6 +4,7 @@ import com.logics.logics.entities.User
 import com.logics.logics.repositories.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @Service
@@ -38,7 +39,21 @@ class UserService(
                 }
             }
     }
+    fun searchUsers(query: String): Flux<User> {
+        return userRepository.findByUsernameContainingIgnoreCase(query)
+    }
 
+    fun updateUserStatus(username: String, status: String): Mono<User> {
+        return userRepository.findByUsername(username)
+            .flatMap { user ->
+                user.status = status
+                userRepository.save(user)
+            }
+    }
+
+    fun getAllUsers(): Flux<User> {
+        return userRepository.findAll()
+    }
     fun getUserDetails(username: String): Mono<User> {
         return userRepository.findByUsername(username)
     }

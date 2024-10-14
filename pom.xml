@@ -78,7 +78,10 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+		</dependency>
 		<!-- Liquibase and PostgreSQL dependencies -->
 		<dependency>
 			<groupId>org.liquibase</groupId>

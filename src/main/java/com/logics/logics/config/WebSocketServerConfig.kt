@@ -14,13 +14,15 @@ open class WebSocketServerConfig {
     @Bean
     open fun webSocketMapping(
         chatWebSocketHandler: ChatWebSocketHandler,
-        roomWebSocketHandler: RoomWebSocketHandler
+        roomWebSocketHandler: RoomWebSocketHandler,
+        playerWebSocketHandler: PlayerWebSocketHandler
     ): HandlerMapping {
         logger.info("Configuring WebSocket mappings")
         return SimpleUrlHandlerMapping(
             mapOf(
                 "/chat" to chatWebSocketHandler,
-                "/rooms" to roomWebSocketHandler
+                "/rooms" to roomWebSocketHandler,
+                "/players" to playerWebSocketHandler
             ),
             -1
         )

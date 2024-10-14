@@ -1,3 +1,4 @@
+
 databaseChangeLog:
   - changeSet:
       id: 5
@@ -28,6 +29,12 @@ databaseChangeLog:
                   name: coins
                   type: INT
                   defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: "offline"
                   constraints:
                     nullable: false
         - createTable:
@@ -105,6 +112,12 @@ databaseChangeLog:
               - column:
                   name: status
                   type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
                   constraints:
                     nullable: false
         - addForeignKeyConstraint:
