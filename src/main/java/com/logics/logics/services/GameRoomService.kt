@@ -6,6 +6,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.sql.Timestamp
+import java.time.Instant
+import java.time.LocalDateTime
 
 @Service
 class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
@@ -19,7 +22,8 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
             maxPlayers = maxPlayers,
             category = category,
             playerIds = mutableListOf(creatorId),
-            status = GameRoom.GameRoomStatus.WAITING
+            status = GameRoom.GameRoomStatus.WAITING ,
+            createdAt = Timestamp.from(Instant.now())
         )
 
         return gameRoomRepository.save(newRoom)
