@@ -45,6 +45,8 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService) : WebSo
             EventType.ROOM_DISBANDED -> handleRoomDisbanded(event)
             EventType.ROOM_LIST_REQUEST -> handleRoomListRequest()
             EventType.ROOM_LEFT -> handleRoomLeft(event, username)
+            EventType.ROOM_FULL -> event.content?.let { handleRoomFull(it.toLong()) } // Обрабатываем событие о заполненной комнате
+            EventType.START_GAME -> event.content?.let { startGame(it.toLong()) } // Обрабатываем старт игры
             else -> logger.warn("Неизвестный тип события: ${event.type}")
         }
     }
@@ -78,8 +80,59 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService) : WebSo
     private fun handleRoomListRequest() {
         broadcastRoomUpdate()
     }
+    private fun broadcastCountdown(roomId: Long, secondsLeft: Int) {
+        // Сначала находим комнату по roomId
+        gameRoomService.findById(roomId)
+            .subscribe { room ->
+                // После получения комнаты отправляем обратный отсчёт всем пользователям в комнате
+                val countdownEvent = Event(EventType.COUNTDOWN, secondsLeft.toString(), "System")
+                broadcastToRoom(room, countdownEvent)
+            }
+    }
+    private fun handleRoomFull(roomId: Long) {
+        // Задержка в 5 секунд перед проверкой игроков
+        scheduler.schedule({
+            gameRoomService.findById(roomId).subscribe { room ->
+                val playerIds = room.playerIds
+                if (playerIds?.size == room.maxPlayers) {
+                    // Если комната всё ещё полная, запускаем обратный отсчёт
+                    startGameCountdown(roomId)
+                } else {
+                    logger.info("Комната $roomId уже не полная, игра не начинается.")
+                }
+            }
+        }, 5, TimeUnit.SECONDS)
+    }
+    private fun startGameCountdown(roomId: Long) {
+        val countdown = 5
+        // Запускаем 5-секундный обратный отсчёт
+        scheduler.schedule({
+            for (i in countdown downTo 0) {
+                Thread.sleep(1000)
+                broadcastCountdown(roomId, i) // Отправляем событие COUNTDOWN
+            }
+            // После окончания отсчёта начинаем игру
+            startGame(roomId)
+        }, 0, TimeUnit.SECONDS)
+    }
+    private fun startGame(roomId: Long) {
+        gameRoomService.startGame(roomId)
+            .flatMap { gameRoomService.findById(roomId) }
+            .subscribe { room ->
+                val startEvent = Event(EventType.GAME_STARTED, roomId.toString(), "System")
+                broadcastToRoom(room, startEvent)
 
-
+                // После отправки события, комната удаляется
+                gameRoomService.disbandRoom(roomId)
+                    .doOnSuccess {
+                        logger.info("Комната $roomId была удалена после старта игры.")
+                    }
+                    .doOnError { error ->
+                        logger.error("Ошибка при удалении комнаты $roomId после старта игры: ${error.message}")
+                    }
+                    .subscribe()
+            }
+    }
     private fun handleRoomJoined(event: Event, username: String) {
         val roomId = event.content?.toLongOrNull() ?: return
         gameRoomService.joinRoom(roomId, username)

@@ -1,0 +1,59 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #121212;
+  margin: 0;
+  padding: 0;
+  color: #fff;
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  padding: 20px;
+}
+
+.game-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.game-score {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.game-body {
+  display: flex;
+  justify-content: space-around;
+  width: 80%;
+  max-width: 800px;
+}
+
+.player-list {
+  width: 30%;
+}
+
+.player-list h3 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.player-list ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.player-list li {
+  background-color: #1f1f1f;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+  text-align: center;
+}

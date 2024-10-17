@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Игра</title>
+  <link rel="stylesheet" href="/assets/css/game.css">
+  <link rel="stylesheet" href="/assets/css/game_header.css">
+
+</head>
+<body>
+<input type="hidden" id="username" th:value="${username}">
+<div class="game-container">
+  <div th:replace="fragments/game-header :: gameHeader"></div>
+
+  <div class="game-body">
+    <div class="player-list">
+      <h3>Игроки:</h3>
+      <ul id="teamA"></ul>
+      <ul id="teamB"></ul>
+    </div>
+    <!-- Игровое поле будет здесь -->
+  </div>
+</div>
+
+<script src="/assets/js/game.js"></script>
+</body>
+</html>

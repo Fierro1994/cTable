@@ -1,5 +1,6 @@
 package com.logics.logics.config
 
+import com.logics.logics.handlers.GameWebSocketHandler
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -15,14 +16,16 @@ open class WebSocketServerConfig {
     open fun webSocketMapping(
         chatWebSocketHandler: ChatWebSocketHandler,
         roomWebSocketHandler: RoomWebSocketHandler,
-        playerWebSocketHandler: PlayerWebSocketHandler
+        playerWebSocketHandler: PlayerWebSocketHandler,
+        gameWebSocketHandler: GameWebSocketHandler
     ): HandlerMapping {
         logger.info("Configuring WebSocket mappings")
         return SimpleUrlHandlerMapping(
             mapOf(
                 "/chat" to chatWebSocketHandler,
                 "/rooms" to roomWebSocketHandler,
-                "/players" to playerWebSocketHandler
+                "/players" to playerWebSocketHandler,
+                "/games" to gameWebSocketHandler
             ),
             -1
         )

@@ -32,45 +32,116 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
   function handleRoomMessage(message) {
-    switch (message.type) {
+    const parsedMessage = message;
+
+    switch (parsedMessage.type) {
       case 'ROOM_LEFT_CONFIRMATION':
         currentRoom = null;
         localStorage.removeItem('currentRoomId');
         displayRooms();
         break;
+
+      case 'COUNTDOWN':
+        startCountdownAndRedirect(parseInt(parsedMessage.content)); // Запускаем отсчёт на 5 секунд
+        break;
+
+      case 'GAME_STARTED':
+        window.location.href = '/game'; // Переход на страницу игры
+        break;
+
       case 'ROOM_UPDATE':
-        const updatedRoom = JSON.parse(message.content);
+        const updatedRoom = JSON.parse(parsedMessage.content);
         if (currentRoom && currentRoom.id === updatedRoom.id) {
           currentRoom = updatedRoom;
           displayRoomDetails(currentRoom);
+
+          // Проверяем, заполнена ли комната
+          if (currentRoom.playerIds.length === currentRoom.maxPlayers) {
+            notifyRoomFull(currentRoom.id); // Уведомляем сервер, что комната заполнена
+          }
         }
         break;
-      case 'GAME_STARTED':
-        if (currentRoom && currentRoom.id === message.roomId) {
-          alert('Игра начинается!');
-        }
-        break;
+
       case 'ROOM_DISBANDED':
         handleRoomDisbanded();
         break;
+
       case 'ROOM_LIST_UPDATE':
-        rooms = JSON.parse(message.content);
+        rooms = JSON.parse(parsedMessage.content);
         if (!currentRoom) {
           displayRooms();
         }
         break;
+
       case 'ROOM_JOIN_CONFIRMATION':
-        const joinedRoom = JSON.parse(message.content);
+        const joinedRoom = JSON.parse(parsedMessage.content);
         currentRoom = joinedRoom;
         localStorage.setItem('currentRoomId', joinedRoom.id);
         displayRoomDetails(currentRoom);
         break;
+
       default:
         console.log("Неизвестный тип сообщения:", message.type);
     }
   }
 
+  function startCountdownAndRedirect(seconds) {
+    showCountdown(seconds);  // Отображаем обратный отсчёт на экране
 
+    const countdownInterval = setInterval(() => {
+      seconds -= 1;
+      if (seconds <= 0) {
+        clearInterval(countdownInterval);
+        window.location.href = '/game';  // Переход на страницу игры после завершения отсчёта
+      }
+    }, 1000);
+  }
+  function notifyRoomFull(roomId) {
+    const roomFullEvent = {
+      type: 'ROOM_FULL',
+      content: roomId.toString(),
+    };
+    roomsSocket.send(JSON.stringify(roomFullEvent)); // Отправляем сообщение на сервер
+  }
+  function showCountdown(secondsLeft) {
+    console.log('showCountdown');
+    const countdownElement = document.createElement('div');
+    countdownElement.id = 'countdownTimer';
+
+    // Стили для элемента обратного отсчёта
+    countdownElement.style.position = 'fixed';
+    countdownElement.style.top = '50%';
+    countdownElement.style.left = '50%';
+    countdownElement.style.transform = 'translate(-50%, -50%)';
+    countdownElement.style.fontSize = '72px'; // Увеличенный размер шрифта для лучшей видимости
+    countdownElement.style.color = '#fff'; // Белый текст для контраста
+    countdownElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'; // Полупрозрачный чёрный фон
+    countdownElement.style.padding = '20px 40px'; // Отступы для создания "кнопки"
+    countdownElement.style.borderRadius = '15px'; // Закруглённые углы
+    countdownElement.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)'; // Тень для глубины
+    countdownElement.style.textAlign = 'center'; // Текст по центру
+    countdownElement.style.zIndex = '1000'; // Высокий z-index для отображения поверх других элементов
+
+    document.body.appendChild(countdownElement);
+
+    countdownElement.textContent = secondsLeft;
+
+    const countdownInterval = setInterval(() => {
+      secondsLeft -= 1;
+      countdownElement.textContent = secondsLeft;
+
+      // Анимация уменьшения при каждом изменении числа
+      countdownElement.style.transform = 'translate(-50%, -50%) scale(1.2)';
+      setTimeout(() => {
+        countdownElement.style.transform = 'translate(-50%, -50%) scale(1)';
+      }, 100);
+
+      if (secondsLeft <= 0) {
+        clearInterval(countdownInterval);
+        countdownElement.remove();
+      }
+    }, 1000);
+  }
   function handleRoomDisbanded() {
     currentRoom = null;
     localStorage.removeItem('currentRoomId');

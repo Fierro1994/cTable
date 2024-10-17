@@ -2,7 +2,6 @@ const playerList = document.getElementById('playerList');
 const playerSearch = document.getElementById('playerSearch');
 const playerSocket = new WebSocket(`ws://${location.host}/players?username=${username}`);
 
-console.log("dsfsdf")
 playerSocket.onmessage = function(event) {
   const data = JSON.parse(event.data);
   if (data.type === 'PLAYER_LIST_UPDATE' || data.type === 'PLAYER_SEARCH_RESULT') {
