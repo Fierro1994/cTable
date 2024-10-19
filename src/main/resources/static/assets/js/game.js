@@ -1,42 +1,78 @@
+
 document.addEventListener('DOMContentLoaded', () => {
-  const game_socket = new WebSocket('ws://localhost:8080/games?username=${username}'); // Подключение к новому сокету
+  const usernameElement = document.getElementById('username');
+  const username = usernameElement ? usernameElement.value : 'unknown';
+  const roomId = 2
 
-  game_socket.onopen = () => {
-    console.log('WebSocket подключен к /games');
-    // Можно отправить запрос на получение состояния игры
-    requestGameState();
-  };
+  let game_socket;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
 
-  game_socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    handleWebSocketMessage(message);
-  };
+  function connectWebSocket() {
+    game_socket = new WebSocket(`ws://${location.host}/games?username=${encodeURIComponent(username)}`);
 
-  game_socket.onclose = () => {
-    console.log('WebSocket закрыт');
-  };
-
-  game_socket.onerror = (error) => {
-    console.error('Ошибка WebSocket:', error);
-  };
-
-  // Отправка запроса на получение состояния игры
-  function requestGameState() {
-    const event = {
-      type: 'GET_GAME_STATE',
-      content: '' // Укажите ID комнаты, если нужно
+    game_socket.onopen = () => {
+      console.log('WebSocket подключен к /games');
+      reconnectAttempts = 0;
+      requestGameState();
     };
-    game_socket.send(JSON.stringify(event));
+
+    game_socket.onmessage = (event) => {
+      console.log('Received message:', event.data);
+      try {
+        const message = JSON.parse(event.data);
+        handleWebSocketMessage(message);
+      } catch (error) {
+        console.error('Ошибка при разборе сообщения:', error);
+      }
+    };
+
+    game_socket.onclose = (event) => {
+      console.log('WebSocket закрыт', event.code, event.reason);
+      if (reconnectAttempts < maxReconnectAttempts) {
+        setTimeout(() => {
+          reconnectAttempts++;
+          console.log(`Попытка переподключения ${reconnectAttempts}...`);
+          connectWebSocket();
+        }, 3000); // Пауза 3 секунды перед повторным подключением
+      } else {
+        console.error('Достигнуто максимальное количество попыток переподключения');
+      }
+    };
+
+    game_socket.onerror = (error) => {
+      console.error('Ошибка WebSocket:', error);
+    };
   }
 
-  // Обработка сообщений WebSocket
+  connectWebSocket();
+
+  function requestGameState() {
+    if (game_socket.readyState === WebSocket.OPEN) {
+      const event = {
+        type: 'GET_GAME_STATE',
+        content: roomId // Теперь отправляем roomId
+      };
+      game_socket.send(JSON.stringify(event));
+    } else {
+      console.warn('WebSocket не готов. Состояние:', game_socket.readyState);
+    }
+  }
+
   function handleWebSocketMessage(message) {
     switch (message.type) {
       case 'GAME_STATE':
-        updateGameState(JSON.parse(message.content));
-        break;
       case 'GAME_STARTED':
-        alert('Игра началась!');
+      case 'SCORE_UPDATED':
+        try {
+          const gameState = JSON.parse(message.content);
+          updateGameState(gameState);
+          if (message.type === 'GAME_STARTED') {
+            alert('Игра началась!');
+          }
+        } catch (error) {
+          console.error('Ошибка при разборе состояния игры:', error);
+        }
         break;
       case 'ERROR':
         console.error('Ошибка от сервера:', message.content);
@@ -46,40 +82,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Обновление состояния игры (категория и команды)
   function updateGameState(gameState) {
     document.getElementById('gameCategory').textContent = gameState.category || 'Неизвестно';
-
-    updateTeamList(document.getElementById('teamA'), gameState.teamA);
-    updateTeamList(document.getElementById('teamB'), gameState.teamB);
+    updateTeamList('teamA', gameState.teamA);
+    updateTeamList('teamB', gameState.teamB);
     updateScores(gameState.teamAScore, gameState.teamBScore);
   }
 
-  // Обновление списка игроков команды
-  function updateTeamList(listElement, players) {
-    listElement.innerHTML = '';
+  function updateTeamList(teamId, players) {
+    const teamList = document.getElementById(teamId);
+    teamList.innerHTML = '';
     players.forEach(player => {
       const li = document.createElement('li');
       li.textContent = player;
-      listElement.appendChild(li);
+      teamList.appendChild(li);
     });
   }
 
-  // Обновление счёта команд
   function updateScores(teamAScore, teamBScore) {
     document.getElementById('teamAScore').textContent = teamAScore;
     document.getElementById('teamBScore').textContent = teamBScore;
   }
-
-  // Пример: Отправка сообщения о старте игры
-  function startGame() {
-    const event = {
-      type: 'START_GAME',
-      content: '' // Укажите ID комнаты, если нужно
-    };
-    game_socket.send(JSON.stringify(event));
-  }
-
-  // При необходимости привязываем события к кнопкам или другим элементам
-  // Например: document.getElementById('startGameButton').addEventListener('click', startGame);
 });

@@ -10,19 +10,26 @@
 </head>
 <body>
 <input type="hidden" id="username" th:value="${username}">
+<input th:if="${_csrf}" type="hidden"
+       th:name="${_csrf.parameterName}"
+       th:value="${_csrf.token}" />
 <div class="game-container">
   <div th:replace="fragments/game-header :: gameHeader"></div>
 
   <div class="game-body">
-    <div class="player-list">
-      <h3>Игроки:</h3>
-      <ul id="teamA"></ul>
-      <ul id="teamB"></ul>
+    <div class="teams-container">
+      <div class="team">
+        <h3>Команда A:</h3>
+        <ul id="teamA"></ul>
+      </div>
+      <div class="team">
+        <h3>Команда B:</h3>
+        <ul id="teamB"></ul>
+      </div>
     </div>
     <!-- Игровое поле будет здесь -->
   </div>
 </div>
-
 <script src="/assets/js/game.js"></script>
 </body>
 </html>

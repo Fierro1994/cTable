@@ -25,5 +25,7 @@ enum class EventType {
     PLAYER_LIST_UPDATE,
     COUNTDOWN,
     GAME_STATE,
-    GET_GAME_STATE
+    GET_GAME_STATE,
+    UPDATE_SCORE,
+    SCORE_UPDATED
 }
