@@ -5,6 +5,7 @@ import com.logics.logics.entities.Event
 import com.logics.logics.entities.EventType
 import com.logics.logics.entities.GameRoom
 import com.logics.logics.services.GameRoomService
+import com.logics.logics.services.GameService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.socket.WebSocketHandler
@@ -15,7 +16,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 @Component
-class RoomWebSocketHandler(private val gameRoomService: GameRoomService) : WebSocketHandler {
+class RoomWebSocketHandler(private val gameRoomService: GameRoomService, private val gameService: GameService) : WebSocketHandler {
 
     private val logger = LoggerFactory.getLogger(RoomWebSocketHandler::class.java)
     private val objectMapper = ObjectMapper()
@@ -90,32 +91,32 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService) : WebSo
             }
     }
     private fun handleRoomFull(roomId: Long) {
-        // Задержка в 5 секунд перед проверкой игроков
         scheduler.schedule({
             gameRoomService.findById(roomId).subscribe { room ->
                 val playerIds = room.playerIds
                 if (playerIds?.size == room.maxPlayers) {
-                    // Если комната всё ещё полная, запускаем обратный отсчёт
                     startGameCountdown(roomId)
                 } else {
                     logger.info("Комната $roomId уже не полная, игра не начинается.")
                 }
             }
-        }, 5, TimeUnit.SECONDS)
+        }, 3, TimeUnit.SECONDS)
     }
     private fun startGameCountdown(roomId: Long) {
         val countdown = 5
-        // Запускаем 5-секундный обратный отсчёт
         scheduler.schedule({
             for (i in countdown downTo 0) {
                 Thread.sleep(1000)
-                broadcastCountdown(roomId, i) // Отправляем событие COUNTDOWN
+                broadcastCountdown(roomId, i)
             }
-            // После окончания отсчёта начинаем игру
             startGame(roomId)
         }, 0, TimeUnit.SECONDS)
     }
     private fun startGame(roomId: Long) {
+        gameService.createGame(gameRoomService.findById(roomId)).subscribe(
+            { gameState -> println("Game state created: $gameState") },
+            { error -> println("Error creating game state: ${error.message}") }
+        )
         gameRoomService.startGame(roomId)
             .flatMap { gameRoomService.findById(roomId) }
             .subscribe { room ->

@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
 
       case 'COUNTDOWN':
-        startCountdownAndRedirect(parseInt(parsedMessage.content)); // Запускаем отсчёт на 5 секунд
+        startCountdownAndRedirect(parseInt(parsedMessage.content));
         break;
 
       case 'GAME_STARTED':
@@ -86,13 +86,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function startCountdownAndRedirect(seconds) {
-    showCountdown(seconds);  // Отображаем обратный отсчёт на экране
-
+    showCountdown(seconds);
     const countdownInterval = setInterval(() => {
       seconds -= 1;
       if (seconds <= 0) {
         clearInterval(countdownInterval);
-        window.location.href = '/game';  // Переход на страницу игры после завершения отсчёта
+        window.location.href = '/game';
       }
     }, 1000);
   }
@@ -108,19 +107,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const countdownElement = document.createElement('div');
     countdownElement.id = 'countdownTimer';
 
-    // Стили для элемента обратного отсчёта
     countdownElement.style.position = 'fixed';
     countdownElement.style.top = '50%';
     countdownElement.style.left = '50%';
     countdownElement.style.transform = 'translate(-50%, -50%)';
-    countdownElement.style.fontSize = '72px'; // Увеличенный размер шрифта для лучшей видимости
-    countdownElement.style.color = '#fff'; // Белый текст для контраста
-    countdownElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'; // Полупрозрачный чёрный фон
-    countdownElement.style.padding = '20px 40px'; // Отступы для создания "кнопки"
-    countdownElement.style.borderRadius = '15px'; // Закруглённые углы
-    countdownElement.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)'; // Тень для глубины
-    countdownElement.style.textAlign = 'center'; // Текст по центру
-    countdownElement.style.zIndex = '1000'; // Высокий z-index для отображения поверх других элементов
+    countdownElement.style.fontSize = '72px';
+    countdownElement.style.color = '#fff';
+    countdownElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    countdownElement.style.padding = '20px 40px';
+    countdownElement.style.borderRadius = '15px';
+    countdownElement.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)';
+    countdownElement.style.textAlign = 'center';
+    countdownElement.style.zIndex = '1000';
 
     document.body.appendChild(countdownElement);
 
@@ -130,7 +128,6 @@ document.addEventListener('DOMContentLoaded', function() {
       secondsLeft -= 1;
       countdownElement.textContent = secondsLeft;
 
-      // Анимация уменьшения при каждом изменении числа
       countdownElement.style.transform = 'translate(-50%, -50%) scale(1.2)';
       setTimeout(() => {
         countdownElement.style.transform = 'translate(-50%, -50%) scale(1)';
@@ -281,11 +278,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const now = Date.now();
     const created = new Date(createdAt).getTime();
     const timePassed = now - created;
-    const timeLeft = Math.max(0, 20 * 60 * 1000 - timePassed);
+    const timeLeft = Math.max(0, 10 * 60 * 1000 - timePassed);
     const minutes = Math.floor(timeLeft / (60 * 1000));
     const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
+
+
 
   function startRoomListTimers() {
     setInterval(() => {
@@ -300,15 +299,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
     }, 1000);
-  }
-  function getTimeLeft(createdAt) {
-    const now = new Date();
-    const created = new Date(createdAt);
-    const timePassed = now - created;
-    const timeLeft = Math.max(0, 10 * 60 * 1000 - timePassed);
-    const minutes = Math.floor(timeLeft / (60 * 1000));
-    const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
   function startRoomTimers() {
