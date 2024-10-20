@@ -1,48 +1,102 @@
+/* Основные стили для страницы */
 body {
-  font-family: Arial, sans-serif;
-  background-color: #121212;
+  font-family: 'Roboto', sans-serif;
+  background-color: #1e1e2f;
+  color: #f0f0f0;
   margin: 0;
   padding: 0;
-  color: #fff;
+  box-sizing: border-box;
 }
 
+/* Заголовок игры */
+.game-header {
+  background-color: #282a36;
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #f0f0f0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Стили для текста категории */
+.game-category {
+  font-size: 20px;
+  color: #50fa7b;
+}
+
+/* Счет игры */
+.game-score {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff79c6;
+  background-color: #44475a;
+  padding: 10px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Основной контейнер */
 .game-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
+  padding-top: 100px; /* Чтобы сделать место для фиксированного заголовка */
   width: 100%;
-  padding: 20px;
+  min-height: 100vh;
 }
 
-.game-header {
-  width: 100%;
+/* Контейнер для основного контента */
+.content-container {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
   align-items: center;
+  width: 90%;
+  max-width: 1200px;
+  margin-top: 20px;
+}
+
+/* Основной контент */
+.game-content {
+  flex: 2;
+  background-color: #2a2a40;
+  width: 100%;
   margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+  color: #f8f8f2;
 }
 
-.game-score {
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.game-body {
+/* Стили для списков команд */
+.teams-container {
   display: flex;
-  justify-content: space-around;
-  width: 80%;
-  max-width: 800px;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .player-list {
-  width: 30%;
+  flex: 1;
+  background-color: #3a3a4f;
+  margin-right: 20px;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .player-list h3 {
   text-align: center;
   margin-bottom: 10px;
+  font-size: 22px;
+  color: #bd93f9;
 }
 
 .player-list ul {
@@ -51,9 +105,138 @@ body {
 }
 
 .player-list li {
-  background-color: #1f1f1f;
+  background-color: #44475a;
   padding: 10px;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
   border-radius: 5px;
   text-align: center;
+  transition: background-color 0.3s;
+}
+
+.player-list li:hover {
+  background-color: #6272a4;
+}
+
+/* Стили для вкладок чатов */
+.chat-tabs {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+.chat-tabs button {
+  background-color: #44475a;
+  color: #f8f8f2;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-right: 10px;
+  border-radius: 5px 5px 0 0;
+}
+
+.chat-tabs button:hover {
+  background-color: #6272a4;
+}
+
+.chat-tabs .active-tab {
+  background-color: #50fa7b;
+  color: #282a36;
+}
+
+/* Контейнер для чатов */
+.chat-container {
+  width: 100%;
+  margin-top: 20px;
+}
+
+/* Разделы чатов */
+.chat-section {
+  background-color: #282a36;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+  margin-bottom: 20px;
+  display: none; /* По умолчанию скрыты */
+}
+
+.chat-section.active-chat {
+  display: block; /* Только активный чат отображается */
+}
+
+.chat-section h3 {
+  font-size: 20px;
+  color: #f8f8f2;
+  margin-bottom: 10px;
+}
+
+/* Окно чата */
+.chat-box {
+  background-color: #44475a;
+  height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.chat-box div {
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #6272a4;
+  border-radius: 5px;
+}
+
+/* Ввод сообщения в чате */
+.chat-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.chat-input textarea {
+  width: 85%;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  background-color: #3a3a4f;
+  color: #f8f8f2;
+  resize: none;
+  height: 50px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.chat-input button {
+  padding: 12px 20px;
+  border-radius: 5px;
+  border: none;
+  background-color: #50fa7b;
+  color: #282a36;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.chat-input button:hover {
+  background-color: #40d973;
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 768px) {
+/* Стили для адаптации под мобильные устройства */
+  .content-container {
+    flex-direction: column;
+  }
+
+  .player-list {
+    margin-right: 0;
+    margin-bottom: 20px;
+  }
+
+  .chat-container {
+    margin-top: 20px;
+  }
+
+  .game-content {
+    width: 100%;
+  }
 }

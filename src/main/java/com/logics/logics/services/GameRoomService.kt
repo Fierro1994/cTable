@@ -1,7 +1,9 @@
 package com.logics.logics.services
 
 import com.logics.logics.entities.GameRoom
+import com.logics.logics.entities.GameState
 import com.logics.logics.repositories.GameRoomRepository
+import com.logics.logics.repositories.GameStateRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -11,7 +13,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 
 @Service
-class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
+class GameRoomService(private val gameStateRepository: GameStateRepository, private val gameRoomRepository: GameRoomRepository) {
 
     private val log = LoggerFactory.getLogger(GameRoomService::class.java)
 
@@ -102,14 +104,6 @@ class GameRoomService(private val gameRoomRepository: GameRoomRepository) {
             }
             .doOnError { error ->
                 log.error("Ошибка при выходе игрока $playerId из комнаты $roomId: ${error.message}")
-            }
-    }
-
-    fun startGame(roomId: Long): Mono<GameRoom> {
-        return gameRoomRepository.findById(roomId)
-            .flatMap { room ->
-                room.status = GameRoom.GameRoomStatus.IN_PROGRESS
-                gameRoomRepository.save(room)
             }
     }
 

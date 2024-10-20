@@ -17,7 +17,8 @@ open class WebSocketServerConfig {
         chatWebSocketHandler: ChatWebSocketHandler,
         roomWebSocketHandler: RoomWebSocketHandler,
         playerWebSocketHandler: PlayerWebSocketHandler,
-        gameWebSocketHandler: GameWebSocketHandler
+        gameWebSocketHandler: GameWebSocketHandler,
+        gameChatWebSocketHandler: GameChatWebSocketHandler
     ): HandlerMapping {
         logger.info("Configuring WebSocket mappings")
         return SimpleUrlHandlerMapping(
@@ -25,7 +26,8 @@ open class WebSocketServerConfig {
                 "/chat" to chatWebSocketHandler,
                 "/rooms" to roomWebSocketHandler,
                 "/players" to playerWebSocketHandler,
-                "/games" to gameWebSocketHandler
+                "/games" to gameWebSocketHandler,
+                "/gamechat" to gameChatWebSocketHandler
             ),
             -1
         )

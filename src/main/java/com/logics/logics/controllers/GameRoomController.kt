@@ -45,10 +45,4 @@ class GameRoomController(private val gameRoomService: GameRoomService) {
             .defaultIfEmpty(ResponseEntity.notFound().build())  // Возвращаем 404, если комната не найдена
     }
 
-    @PostMapping("/{roomId}/start")
-    fun startGame(@PathVariable roomId: Long): Mono<ResponseEntity<GameRoom>> {
-        return gameRoomService.startGame(roomId)
-            .map { ResponseEntity.ok(it) }
-            .onErrorResume { Mono.just(ResponseEntity.badRequest().build()) }
-    }
-}
+  }

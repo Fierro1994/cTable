@@ -1,65 +1,85 @@
 package com.logics.logics.services
 
-import com.logics.logics.entities.GameRoom
 import com.logics.logics.entities.GameState
+import com.logics.logics.repositories.GameRoomRepository
+import com.logics.logics.repositories.GameStateRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 
-import com.logics.logics.repositories.GameStateRepository
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
-
 @Service
-class GameService(private val gameStateRepository: GameStateRepository,
-                  private val logger: Logger = LoggerFactory.getLogger(GameService::class.java)
+class GameService(
+    private val gameStateRepository: GameStateRepository,
+    private val gameRoomRepository: GameRoomRepository
 ) {
 
-    fun startGameWithTeams(roomId: Long, teamA: List<String>, teamB: List<String>, category: String): Mono<GameState> {
-        val gameState = GameState(
-            roomId = roomId,
-            teamA = teamA,
-            teamB = teamB,
-            category = category,
-            teamAScore = 0,
-            teamBScore = 0,
-            status = "IN_PROGRESS"
-        )
-        return gameStateRepository.save(gameState)
+    private val logger = LoggerFactory.getLogger(GameService::class.java)
+
+    // Метод, который проверяет наличие состояния игры и создает его, если оно отсутствует
+    fun startGame(roomId: Long): Mono<GameState> {
+        return gameStateRepository.findByRoomId(roomId)
+            .switchIfEmpty(
+                gameRoomRepository.findById(roomId)
+                    .flatMap { room ->
+                        val players = room.playerIds?.toList() ?: emptyList()
+                        val teamA = players.subList(0, players.size / 2)
+                        val teamB = players.subList(players.size / 2, players.size)
+
+                        val gameState = GameState(
+                            roomId = room.id ?: 0L,
+                            teamA = teamA,
+                            teamB = teamB,
+                            category = room.category,
+                            teamAScore = 0,
+                            teamBScore = 0,
+                            status = "IN_PROGRESS"
+                        )
+
+                        gameStateRepository.save(gameState)
+                    }
+            )
     }
 
-    fun createGame(gameRoom: Mono<GameRoom>): Mono<GameState> {
-        return gameRoom.flatMap { room ->
-            logger.info("Creating game for room: ${room.id}")
-            val gameState = GameState(
-                roomId = room.id ?: 0L,
-                teamA = emptyList(),
-                teamB = emptyList(),
-                category = room.category,
-                teamAScore = 0,
-                teamBScore = 0,
-                status = "WAITING"
-            )
-            gameStateRepository.save(gameState)
-                .doOnSuccess { savedState ->
-                    logger.info("Game state saved successfully: ${savedState.id}")
-                }
-                .doOnError { error ->
-                    logger.error("Error saving game state: ${error.message}", error)
-                }
-        }
+    fun saveGameState(gameState: GameState): Mono<GameState> {
+        return gameStateRepository.save(gameState)
     }
 
     fun getGameState(roomId: Long): Mono<GameState> {
         return gameStateRepository.findByRoomId(roomId)
     }
 
-    fun updateScore(roomId: Long, teamAScore: Int, teamBScore: Int): Mono<GameState> {
-        return gameStateRepository.findByRoomId(roomId)
-            .flatMap { gameState ->
-                gameState.teamAScore = teamAScore
-                gameState.teamBScore = teamBScore
-                gameStateRepository.save(gameState)
+    // Метод для получения списка игроков команды (teamA или teamB) в зависимости от имени игрока
+    fun getTeamPlayers(roomId: Long, username: String): Mono<List<String>> {
+        return getGameState(roomId).map { gameState ->
+            val cleanedTeamA = cleanPlayerNames(gameState.teamA)
+            val cleanedTeamB = cleanPlayerNames(gameState.teamB)
+
+            if (cleanedTeamA.contains(username)) {
+                cleanedTeamA
+            } else if (cleanedTeamB.contains(username)) {
+                cleanedTeamB
+            } else {
+                emptyList()
             }
+        }
+    }
+
+    // Метод для получения всех игроков в комнате (teamA + teamB)
+    fun getAllPlayers(roomId: Long): Mono<List<String>> {
+        return getGameState(roomId).map { gameState ->
+            val cleanedTeamA = cleanPlayerNames(gameState.teamA)
+            val cleanedTeamB = cleanPlayerNames(gameState.teamB)
+            cleanedTeamA + cleanedTeamB
+        }
+    }
+
+    // Метод для очистки имен игроков от фигурных скобок
+    private fun cleanPlayerNames(players: List<String>): List<String> {
+        return players.map { cleanUsername(it) }
+    }
+
+    // Метод для удаления фигурных скобок из имени
+    private fun cleanUsername(username: String): String {
+        return username.replace("{", "").replace("}", "")
     }
 }

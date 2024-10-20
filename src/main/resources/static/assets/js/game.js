@@ -1,24 +1,22 @@
-
 document.addEventListener('DOMContentLoaded', () => {
   const usernameElement = document.getElementById('username');
   const username = usernameElement ? usernameElement.value : 'unknown';
-  const roomId = 2
+  const roomId = new URLSearchParams(window.location.search).get('roomId');
 
-  let game_socket;
+  let gameSocket;
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
 
   function connectWebSocket() {
-    game_socket = new WebSocket(`ws://${location.host}/games?username=${encodeURIComponent(username)}`);
+    gameSocket = new WebSocket(`ws://${location.host}/games?username=${encodeURIComponent(username)}`);
 
-    game_socket.onopen = () => {
+    gameSocket.onopen = () => {
       console.log('WebSocket подключен к /games');
       reconnectAttempts = 0;
-      requestGameState();
+      requestGameState(); // Запрашиваем состояние игры сразу после подключения
     };
 
-    game_socket.onmessage = (event) => {
-      console.log('Received message:', event.data);
+    gameSocket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
         handleWebSocketMessage(message);
@@ -27,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    game_socket.onclose = (event) => {
+    gameSocket.onclose = (event) => {
       console.log('WebSocket закрыт', event.code, event.reason);
       if (reconnectAttempts < maxReconnectAttempts) {
         setTimeout(() => {
@@ -40,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    game_socket.onerror = (error) => {
+    gameSocket.onerror = (error) => {
       console.error('Ошибка WebSocket:', error);
     };
   }
@@ -48,14 +46,14 @@ document.addEventListener('DOMContentLoaded', () => {
   connectWebSocket();
 
   function requestGameState() {
-    if (game_socket.readyState === WebSocket.OPEN) {
+    if (gameSocket.readyState === WebSocket.OPEN) {
       const event = {
         type: 'GET_GAME_STATE',
-        content: roomId // Теперь отправляем roomId
+        content: roomId
       };
-      game_socket.send(JSON.stringify(event));
+      gameSocket.send(JSON.stringify(event));
     } else {
-      console.warn('WebSocket не готов. Состояние:', game_socket.readyState);
+      console.warn('WebSocket не готов. Состояние:', gameSocket.readyState);
     }
   }
 
@@ -64,14 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'GAME_STATE':
       case 'GAME_STARTED':
       case 'SCORE_UPDATED':
-        try {
-          const gameState = JSON.parse(message.content);
-          updateGameState(gameState);
-          if (message.type === 'GAME_STARTED') {
-            alert('Игра началась!');
-          }
-        } catch (error) {
-          console.error('Ошибка при разборе состояния игры:', error);
+        const gameState = JSON.parse(message.content);
+        updateGameState(gameState);
+        if (message.type === 'GAME_STARTED') {
+          alert('Игра началась!');
         }
         break;
       case 'ERROR':
@@ -83,10 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateGameState(gameState) {
-    document.getElementById('gameCategory').textContent = gameState.category || 'Неизвестно';
+    document.querySelector('.game-category span').textContent = gameState.category || '-';
+    document.querySelector('#teamAScore').textContent = gameState.teamAScore;
+    document.querySelector('#teamBScore').textContent = gameState.teamBScore;
+
     updateTeamList('teamA', gameState.teamA);
     updateTeamList('teamB', gameState.teamB);
-    updateScores(gameState.teamAScore, gameState.teamBScore);
   }
 
   function updateTeamList(teamId, players) {
@@ -97,10 +93,5 @@ document.addEventListener('DOMContentLoaded', () => {
       li.textContent = player;
       teamList.appendChild(li);
     });
-  }
-
-  function updateScores(teamAScore, teamBScore) {
-    document.getElementById('teamAScore').textContent = teamAScore;
-    document.getElementById('teamBScore').textContent = teamBScore;
   }
 });

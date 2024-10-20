@@ -1,0 +1,31 @@
+<div th:fragment="gameChat" class="chat-container" xmlns:th="http://www.w3.org/1999/xhtml">
+  <!-- Вкладки для переключения чатов -->
+  <div class="chat-tabs">
+    <button id="generalChatTab" class="active-tab" onclick="switchChatTab('general')">Общий чат</button>
+    <button id="teamChatTab" onclick="switchChatTab('team')">Командный чат</button>
+  </div>
+
+  <!-- Общий чат -->
+  <div id="generalChatSection" class="chat-section active-chat">
+    <h3>Общий чат</h3>
+    <div id="generalChat" class="chat-box">
+      <!-- Здесь будут появляться сообщения общего чата -->
+    </div>
+    <div class="chat-input">
+      <textarea id="generalChatMessage" placeholder="Введите сообщение для общего чата..."></textarea>
+      <button id="sendGeneralChatButton" onclick="sendGeneralMessage()">Отправить</button>
+    </div>
+  </div>
+
+  <!-- Командный чат -->
+  <div id="teamChatSection" class="chat-section">
+    <h3>Командный чат</h3>
+    <div id="teamChat" class="chat-box">
+      <!-- Здесь будут появляться сообщения командного чата -->
+    </div>
+    <div class="chat-input">
+      <textarea id="teamChatMessage" placeholder="Введите сообщение для командного чата..."></textarea>
+      <button id="sendTeamChatButton" onclick="sendTeamMessage()">Отправить</button>
+    </div>
+  </div>
+</div>

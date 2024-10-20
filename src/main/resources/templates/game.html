@@ -5,31 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Игра</title>
   <link rel="stylesheet" href="/assets/css/game.css">
-  <link rel="stylesheet" href="/assets/css/game_header.css">
-
 </head>
 <body>
+<!-- Поле для хранения имени пользователя -->
 <input type="hidden" id="username" th:value="${username}">
+
+<!-- Поле для CSRF-токена -->
 <input th:if="${_csrf}" type="hidden"
        th:name="${_csrf.parameterName}"
        th:value="${_csrf.token}" />
+
+<!-- Контейнер для игры -->
 <div class="game-container">
-  <div th:replace="fragments/game-header :: gameHeader"></div>
+  <!-- Вставляем заголовок игры через Thymeleaf фрагмент -->
+  <div th:replace="~{fragments/game-header :: gameHeader}"></div>
 
   <div class="game-body">
-    <div class="teams-container">
-      <div class="team">
-        <h3>Команда A:</h3>
-        <ul id="teamA"></ul>
+    <div class="content-container">
+      <!-- Дополнительный контент игры -->
+      <div class="game-content">
+        <!-- Основной контент игры может быть здесь -->
+        <p>Контент игры будет отображаться здесь.</p>
       </div>
-      <div class="team">
-        <h3>Команда B:</h3>
-        <ul id="teamB"></ul>
+
+      <!-- Списки команд справа -->
+      <div class="teams-container">
+        <!-- Команда A -->
+        <div class="team player-list">
+          <h3>Команда A:</h3>
+          <ul id="teamA">
+            <!-- Итерация по списку teamA и вывод каждого игрока -->
+            <li th:each="player : ${teamA}" th:text="${player}">Игрок A</li>
+          </ul>
+        </div>
+
+        <!-- Команда B -->
+        <div class="team player-list">
+          <h3>Команда B:</h3>
+          <ul id="teamB">
+            <!-- Итерация по списку teamB и вывод каждого игрока -->
+            <li th:each="player : ${teamB}" th:text="${player}">Игрок B</li>
+          </ul>
+        </div>
       </div>
     </div>
-    <!-- Игровое поле будет здесь -->
   </div>
+  <div th:replace="~{fragments/game-chat :: gameChat}"></div>
 </div>
+
+<!-- Подключение JavaScript файла -->
 <script src="/assets/js/game.js"></script>
+<script src="/assets/js/game_chat.js"></script>
 </body>
 </html>

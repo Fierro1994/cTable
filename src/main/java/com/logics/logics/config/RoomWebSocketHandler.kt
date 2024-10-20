@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.logics.logics.entities.Event
 import com.logics.logics.entities.EventType
 import com.logics.logics.entities.GameRoom
+import com.logics.logics.entities.GameState
 import com.logics.logics.services.GameRoomService
 import com.logics.logics.services.GameService
 import org.slf4j.LoggerFactory
@@ -46,8 +47,7 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService, private
             EventType.ROOM_DISBANDED -> handleRoomDisbanded(event)
             EventType.ROOM_LIST_REQUEST -> handleRoomListRequest()
             EventType.ROOM_LEFT -> handleRoomLeft(event, username)
-            EventType.ROOM_FULL -> event.content?.let { handleRoomFull(it.toLong()) } // Обрабатываем событие о заполненной комнате
-            EventType.START_GAME -> event.content?.let { startGame(it.toLong()) } // Обрабатываем старт игры
+            EventType.ROOM_FULL -> event.content?.let { handleRoomFull(it.toLong()) }
             else -> logger.warn("Неизвестный тип события: ${event.type}")
         }
     }
@@ -103,37 +103,45 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService, private
         }, 3, TimeUnit.SECONDS)
     }
     private fun startGameCountdown(roomId: Long) {
-        val countdown = 5
+        val countdown = 3  // Время обратного отсчета
         scheduler.schedule({
             for (i in countdown downTo 0) {
                 Thread.sleep(1000)
                 broadcastCountdown(roomId, i)
             }
-            startGame(roomId)
+
+            // После обратного отсчета, сохраняем данные комнаты в GameState и удаляем комнату
+            gameRoomService.findById(roomId).flatMap { room ->
+                // Делаем копию списка игроков, чтобы избежать проблемы с изменяемостью
+                val players = room.playerIds?.toList() ?: emptyList()
+
+                // Разделяем игроков на две команды
+                val teamA = players.subList(0, players.size / 2)
+                val teamB = players.subList(players.size / 2, players.size)
+
+                // Создаем объект GameState
+                val gameState = GameState(
+                    roomId = room.id ?: 0L,
+                    teamA = teamA,
+                    teamB = teamB,
+                    category = room.category,
+                    teamAScore = 0,
+                    teamBScore = 0,
+                    status = "IN_PROGRESS"
+                )
+
+                // Сохраняем GameState в БД
+                gameService.saveGameState(gameState).flatMap {
+                    // Удаляем комнату после успешного сохранения
+                    gameRoomService.disbandRoom(roomId)
+                }
+            }.subscribe {
+                logger.info("Комната $roomId удалена и данные игры сохранены в GameState")
+            }
         }, 0, TimeUnit.SECONDS)
     }
-    private fun startGame(roomId: Long) {
-        gameService.createGame(gameRoomService.findById(roomId)).subscribe(
-            { gameState -> println("Game state created: $gameState") },
-            { error -> println("Error creating game state: ${error.message}") }
-        )
-        gameRoomService.startGame(roomId)
-            .flatMap { gameRoomService.findById(roomId) }
-            .subscribe { room ->
-                val startEvent = Event(EventType.GAME_STARTED, roomId.toString(), "System")
-                broadcastToRoom(room, startEvent)
 
-                // После отправки события, комната удаляется
-                gameRoomService.disbandRoom(roomId)
-                    .doOnSuccess {
-                        logger.info("Комната $roomId была удалена после старта игры.")
-                    }
-                    .doOnError { error ->
-                        logger.error("Ошибка при удалении комнаты $roomId после старта игры: ${error.message}")
-                    }
-                    .subscribe()
-            }
-    }
+
     private fun handleRoomJoined(event: Event, username: String) {
         val roomId = event.content?.toLongOrNull() ?: return
         gameRoomService.joinRoom(roomId, username)
@@ -142,8 +150,6 @@ class RoomWebSocketHandler(private val gameRoomService: GameRoomService, private
                 userRooms[username] = roomId
                 broadcastRoomUpdate(room)
                 broadcastRoomListUpdate()
-
-                // Отправляем подтверждение присоединения пользователю
                 val joinConfirmation = Event(EventType.ROOM_JOIN_CONFIRMATION, objectMapper.writeValueAsString(room), "System")
                 sessions[username]?.send(Mono.just(sessions[username]!!.textMessage(objectMapper.writeValueAsString(joinConfirmation))))?.subscribe()
             }

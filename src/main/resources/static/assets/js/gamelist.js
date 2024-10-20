@@ -45,10 +45,6 @@ document.addEventListener('DOMContentLoaded', function() {
         startCountdownAndRedirect(parseInt(parsedMessage.content));
         break;
 
-      case 'GAME_STARTED':
-        window.location.href = '/game'; // Переход на страницу игры
-        break;
-
       case 'ROOM_UPDATE':
         const updatedRoom = JSON.parse(parsedMessage.content);
         if (currentRoom && currentRoom.id === updatedRoom.id) {
@@ -91,19 +87,20 @@ document.addEventListener('DOMContentLoaded', function() {
       seconds -= 1;
       if (seconds <= 0) {
         clearInterval(countdownInterval);
-        window.location.href = '/game';
+        window.location.href = `/game?roomId=${currentRoom.id}`;
       }
     }, 1000);
   }
   function notifyRoomFull(roomId) {
-    const roomFullEvent = {
-      type: 'ROOM_FULL',
-      content: roomId.toString(),
-    };
-    roomsSocket.send(JSON.stringify(roomFullEvent)); // Отправляем сообщение на сервер
+    if (currentRoom && currentRoom.creatorId === username) {
+      const roomFullEvent = {
+        type: 'ROOM_FULL',
+        content: roomId.toString(),
+      };
+      roomsSocket.send(JSON.stringify(roomFullEvent)); // Отправляем сообщение на сервер
+    }
   }
   function showCountdown(secondsLeft) {
-    console.log('showCountdown');
     const countdownElement = document.createElement('div');
     countdownElement.id = 'countdownTimer';
 

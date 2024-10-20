@@ -178,9 +178,3 @@ databaseChangeLog:
                   defaultValue: "IN_PROGRESS"
                   constraints:
                     nullable: false
-        - addForeignKeyConstraint:
-            baseColumnNames: room_id
-            baseTableName: game_states
-            constraintName: fk_game_states_game_rooms
-            referencedColumnNames: id
-            referencedTableName: game_rooms
