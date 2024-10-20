@@ -1,5 +1,6 @@
 package com.logics.logics.controllers
 
+import com.logics.logics.entities.CategoryList
 import com.logics.logics.services.UserService
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
@@ -19,6 +20,7 @@ class HomeController(private val userService: UserService) {
             .doOnNext { user ->
                 model.addAttribute("username", user.username)
                 model.addAttribute("coins", user.coins)
+                model.addAttribute("categories", CategoryList.values())
             }
             .thenReturn("home")
     }

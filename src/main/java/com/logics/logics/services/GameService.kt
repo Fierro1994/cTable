@@ -46,6 +46,14 @@ class GameService(
 
     fun getGameState(roomId: Long): Mono<GameState> {
         return gameStateRepository.findByRoomId(roomId)
+            .map { gameState ->
+                // Очищаем имена игроков в командах
+                val cleanedTeamA = cleanPlayerNames(gameState.teamA)
+                val cleanedTeamB = cleanPlayerNames(gameState.teamB)
+
+                // Возвращаем новое состояние игры с очищенными именами игроков
+                gameState.copy(teamA = cleanedTeamA, teamB = cleanedTeamB)
+            }
     }
 
     // Метод для получения списка игроков команды (teamA или teamB) в зависимости от имени игрока

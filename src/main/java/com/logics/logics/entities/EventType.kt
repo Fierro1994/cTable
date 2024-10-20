@@ -27,5 +27,8 @@ enum class EventType {
     GAME_STATE,
     GET_GAME_STATE,
     UPDATE_SCORE,
-    SCORE_UPDATED
+    SCORE_UPDATED,
+    GET_QUESTION,
+    ANSWER,
+    QUESTION
 }

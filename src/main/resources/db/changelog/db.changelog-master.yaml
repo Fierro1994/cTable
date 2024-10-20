@@ -178,3 +178,53 @@ databaseChangeLog:
                   defaultValue: "IN_PROGRESS"
                   constraints:
                     nullable: false
+
+  - changeSet:
+      id: 8
+      author: roman_bai
+      changes:
+        - createTable:
+            tableName: questions
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: question_text
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: option_a
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: option_b
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: option_c
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: option_d
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: correct_answer
+                  type: VARCHAR(1)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: image_url
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true

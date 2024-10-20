@@ -33,11 +33,10 @@
         <option value="12">12 игроков</option>
       </select>
       <select id="roomCategory">
-        <option value="Математика">Математика</option>
-        <option value="История">История</option>
-        <option value="Наука">Наука</option>
-        <option value="Литература">Литература</option>
-        <option value="География">География</option>
+        <option th:each="category : ${categories}"
+                th:value="${category.name()}"
+                th:text="${category.getLocalizedName()}">
+        </option>
       </select>
       <button id="createRoomSubmitBtn">Создать комнату</button>
       <button id="createRoomCancelBtn">Отмена</button>

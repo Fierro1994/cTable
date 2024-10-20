@@ -219,7 +219,23 @@ body {
 .chat-input button:hover {
   background-color: #40d973;
 }
+.question-container {
+  text-align: center;
+  margin-top: 20px;
+}
 
+.question-image {
+  width: 300px;
+  height: auto;
+  margin-bottom: 15px;
+}
+
+.options button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
 /* Адаптация для мобильных устройств */
 @media (max-width: 768px) {
 /* Стили для адаптации под мобильные устройства */
